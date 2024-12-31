@@ -5,7 +5,6 @@ import shutil
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando en la terminal y devuelve la salida."""
-    import subprocess
     if use_sudo:
         command = "sudo " + command
     result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -22,8 +21,8 @@ def scan_wifi():
     # Por simplicidad, asumimos que devuelve una lista de BSSIDs
     return scan_stdout.splitlines()
 
-# Ejecutar pixiewps directamente
 def execute_pixiewps(bssid):
+    """Ejecuta pixiewps directamente."""
     pixiewps_command = f"pixiewps -i wlan0 -b {bssid} -vv"
     pixie_stdout, pixie_stderr = run_command(pixiewps_command, use_sudo=True)
 
