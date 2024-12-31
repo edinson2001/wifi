@@ -1,6 +1,7 @@
 import subprocess
 import json
 import os
+import shutil
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y devuelve la salida."""
