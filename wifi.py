@@ -1,7 +1,6 @@
 import subprocess
 import json
 import os
-import shutil
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y devuelve la salida."""
@@ -67,19 +66,18 @@ def extract_value(output, key):
             return line.split(key)[-1].strip()
     return None
 
-def verify_environment():
+def check_prerequisites():
     """Verifica que las herramientas necesarias estén instaladas."""
-    required_tools = ["reaver", "pixiewps", "termux-wifi-scaninfo"]
-    for tool in required_tools:
+    tools = ["termux-wifi-scaninfo", "reaver", "pixiewps"]
+    for tool in tools:
         if not shutil.which(tool):
-            print(f"Error: La herramienta {tool} no está instalada o no está en el PATH.")
+            print(f"Error: {tool} no está instalado. Por favor, instálalo e intenta nuevamente.")
             return False
     return True
 
 def main():
-    # Verificar entorno
-    if not verify_environment():
-        print("Por favor, instala las herramientas necesarias y asegúrate de que estén en el PATH.")
+    # Verificar herramientas necesarias
+    if not check_prerequisites():
         return
 
     # Escanear redes Wi-Fi
@@ -107,6 +105,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
