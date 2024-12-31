@@ -1,5 +1,6 @@
 import subprocess
 import re
+import os
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y muestra la salida"""
@@ -16,7 +17,7 @@ def run_command(command, use_sudo=False):
 
 def extract_value(output, key):
     """Extrae un valor de la salida del comando basado en una clave"""
-    match = re.search(f"{key} ([0-9a-fA-F]+)", output)
+    match = re.search(f"{key} ([0-9a-fA-F:]+)", output)
     return match.group(1) if match else None
 
 def scan_wifi():
@@ -32,6 +33,7 @@ def scan_wifi():
             redes.append(essid)
         if "BSS" in linea:
             bssid = linea.split()[1]
+            bssid = bssid.split('(')[0]  # Limpiar el BSSID
             bssids.append(bssid)
         if "freq" in linea:
             try:
@@ -97,6 +99,9 @@ def main():
         red_seleccionada = redes[seleccion]
         bssid_seleccionado = bssids[seleccion]
         canal_seleccionado = canales[seleccion]
+        
+        # Limpiar la pantalla
+        os.system('clear')
         
         print(f"Red seleccionada: {red_seleccionada}")
         print(f"BSSID: {bssid_seleccionado}")
