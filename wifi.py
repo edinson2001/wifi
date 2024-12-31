@@ -27,8 +27,12 @@ def scan_wifi():
             bssid = linea.split()[1]
             bssids.append(bssid)
         if "freq" in linea:
-            channel = int((int(linea.split()[1]) - 2407) / 5)
-            canales.append(channel)
+            try:
+                freq = int(linea.split()[1])
+                channel = int((freq - 2407) / 5)
+                canales.append(channel)
+            except ValueError:
+                continue
     return redes, bssids, canales
 
 def capturar_paquetes(bssid, channel):
