@@ -2,7 +2,7 @@ import os
 import subprocess
 
 def instalar_dependencias():
-    # Instalar dependencias necesarias
+    # Instalar dependencias necesarias sin usar tsu
     os.system('pkg update && pkg upgrade -y')
     os.system('pkg install root-repo -y')
     os.system('pkg install tsu -y')
@@ -14,7 +14,7 @@ def instalar_dependencias():
 def escanear_redes():
     # Escanear redes WiFi disponibles
     try:
-        resultado = subprocess.check_output(['tsu', '-c', 'iwlist wlan0 scan'], universal_newlines=True)
+        resultado = subprocess.check_output(['iwlist', 'wlan0', 'scan'], universal_newlines=True)
         redes = []
         for linea in resultado.split('\n'):
             if "ESSID" in linea:
