@@ -14,17 +14,6 @@ def run_command(command, use_sudo=False):
     else:
         return stderr.decode()
 
-def turn_off_wifi():
-    """Apagar el Wi-Fi usando Termux"""
-    print("Apagando el Wi-Fi...\n")
-    run_command("termux-wifi-enable false", use_sudo=False)
-
-def turn_on_hotspot():
-    """Activar el Hotspot Wi-Fi"""
-    print("Activando el Hotspot Wi-Fi...\n")
-    run_command("settings put global tether_dun_required 0", use_sudo=True)
-    run_command("settings put global tether_enable 1", use_sudo=True)
-
 def scan_wifi():
     """Escanear redes Wi-Fi cercanas"""
     print("Escaneando redes Wi-Fi...\n")
@@ -78,11 +67,6 @@ def pixiewps_attack(target_pcap):
     print("Ataque Pixiewps finalizado.\n")
 
 def main():
-    # Apagar el Wi-Fi y activar el Hotspot
-    turn_off_wifi()
-    time.sleep(2)  # Esperar a que el Wi-Fi se apague completamente
-    turn_on_hotspot()
-    
     # Escanear redes Wi-Fi
     networks = scan_wifi()
     
@@ -106,13 +90,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
