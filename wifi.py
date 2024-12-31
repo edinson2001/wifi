@@ -14,7 +14,7 @@ def instalar_dependencias():
 def escanear_redes():
     # Escanear redes WiFi disponibles
     try:
-        resultado = subprocess.check_output(['iwlist', 'wlan0', 'scan'], universal_newlines=True)
+        resultado = subprocess.check_output(['tsu', '-c', 'iwlist wlan0 scan'], universal_newlines=True)
         redes = []
         for linea in resultado.split('\n'):
             if "ESSID" in linea:
@@ -23,6 +23,9 @@ def escanear_redes():
         return redes
     except subprocess.CalledProcessError as e:
         print(f"Error al escanear redes: {e}")
+        return []
+    except PermissionError as e:
+        print(f"Permiso denegado al escanear redes: {e}")
         return []
 
 def capturar_paquetes(bssid, channel):
