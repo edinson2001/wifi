@@ -32,19 +32,30 @@ def scan_wifi(interface):
     resultado, _ = run_command(f"iw dev {interface} scan", use_sudo=True)
     redes = []
     bssids = []
-    signals = []
+    canales = []
+    intensidades = []
     for linea in resultado.split('\n'):
         if "SSID" in linea:
-            essid = linea.split(':', 1)[1].strip()
+            essid = linea.split(':')[1].strip()
             redes.append(essid)
         if "BSS" in linea:
-            bssid = linea.split()[1].split('(')[0]
+            bssid = linea.split()[1]
+            bssid = bssid.split('(')[0]  # Limpiar el BSSID
             if is_valid_bssid(bssid):
                 bssids.append(bssid)
-        if "signal:" in linea:
-            signal = linea.split(':', 1)[1].strip()
-            signals.append(signal)
-    return redes, bssids, signals
+            else:
+                bssids.append(None)
+        if "freq" in linea:
+            try:
+                freq = int(linea.split()[1])
+                channel = int((freq - 2407) / 5)
+                canales.append(channel)
+            except ValueError:
+                canales.append(None)
+        if "signal" in linea:
+            signal = linea.split(':')[1].strip()
+            intensidades.append(signal)
+    return redes, bssids, canales, intensidades
 
 def create_wpa_supplicant_conf(ssid):
     """Crea un archivo de configuración temporal para wpa_supplicant"""
