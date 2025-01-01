@@ -3,11 +3,7 @@ import re
 import os
 import tempfile
 import time
-
-def check_tool_availability(tool):
-    """Verifica si una herramienta está disponible en el sistema."""
-    result = subprocess.run(["which", tool], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return result.returncode == 0
+from tabulate import tabulate
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y muestra la salida"""
@@ -38,6 +34,7 @@ def scan_wifi(interface):
     redes = []
     bssids = []
     canales = []
+    intensidades = []
     for linea in resultado.split('\n'):
         if "SSID" in linea:
             essid = linea.split(':')[1].strip()
@@ -56,7 +53,10 @@ def scan_wifi(interface):
                 canales.append(channel)
             except ValueError:
                 canales.append(None)
-    return redes, bssids, canales
+        if "signal" in linea:
+            signal = linea.split(':')[1].strip()
+            intensidades.append(signal)
+    return redes, bssids, canales, intensidades
 
 def perform_pixie_dust_attack(interface, bssid):
     """Realiza el ataque Pixie Dust usando reaver con la opción -K."""
@@ -99,12 +99,16 @@ def main():
 
     # Escanear redes Wi-Fi utilizando la interfaz del hotspot (por ejemplo, wlan1)
     hotspot_interface = "wlan1"  # Asegúrate de que esta sea la interfaz correcta para el hotspot en tu dispositivo
-    redes, bssids, canales = scan_wifi(hotspot_interface)
+    redes, bssids, canales, intensidades = scan_wifi(hotspot_interface)
     if redes:
         print("Redes disponibles:")
+        table = []
         for i, red in enumerate(redes):
             if bssids[i]:
-                print(f"{i + 1}. {red} - BSSID: {bssids[i]}")
+                table.append([i + 1, red, bssids[i], canales[i], intensidades[i]])
+        
+        headers = ["#", "SSID", "BSSID", "Canal", "Intensidad"]
+        print(tabulate(table, headers, tablefmt="fancy_grid"))
         
         seleccion = int(input("Selecciona la red que deseas auditar (número): ")) - 1
         red_seleccionada = redes[seleccion]
@@ -125,7 +129,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 
