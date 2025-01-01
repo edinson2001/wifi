@@ -62,7 +62,7 @@ def scan_wifi(interface):
             canales.append(canal)
         if "signal:" in linea:
             intensidad = linea.split(':', 1)[1].strip()
-            intensidades.append(intensidad)
+            intensidades.append(intesidad)
     return redes, bssids, canales, intensidades
 
 def create_wpa_supplicant_conf(ssid):
@@ -92,7 +92,7 @@ def capture_wps_data(interface, ssid):
     wpa_supplicant_path = "/data/data/com.termux/files/usr/bin/wpa_supplicant"  # Ruta completa de wpa_supplicant
     wpa_supplicant_command = f"{wpa_supplicant_path} -i {interface} -c {conf_file} -dd"
     print(f"Ejecutando wpa_supplicant: {wpa_supplicant_command}")
-    stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True, timeout=30)  # Reducir el tiempo de espera a 30 segundos
+    stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True, timeout=120)  # Aumentar el tiempo de espera a 120 segundos
 
     print("Salida de wpa_supplicant:")
     print(stdout)
