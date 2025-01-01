@@ -3,6 +3,7 @@ import re
 import os
 import tempfile
 import time
+from tabulate import tabulate
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y muestra la salida en tiempo real"""
@@ -136,8 +137,8 @@ def main():
 
     if redes:
         print("\nRedes disponibles:")
-        for i, red in enumerate(redes):
-            print(f"{i + 1}. SSID: {red} | BSSID: {bssids[i]}")
+        tabla_redes = [[i + 1, redes[i], bssids[i]] for i in range(len(redes))]
+        print(tabulate(tabla_redes, headers=["#", "SSID", "BSSID"], tablefmt="grid"))
 
         try:
             seleccion = int(input("\nSelecciona la red que deseas auditar (número): ")) - 1
