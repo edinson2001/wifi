@@ -90,6 +90,11 @@ def perform_pixie_dust_attack(interface, bssid):
         print(stdout.decode())
         return None
 
+def check_tool_availability(tool):
+    """Verifica si una herramienta está disponible en el sistema"""
+    result = subprocess.run(["which", tool], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return result.returncode == 0
+
 def main():
     # Verificar la disponibilidad de las herramientas necesarias
     tools = ["iw"]
