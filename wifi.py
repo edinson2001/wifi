@@ -20,6 +20,14 @@ def extract_value(output, key):
     match = re.search(f"{key} ([0-9a-fA-F:]+)", output)
     return match.group(1) if match else None
 
+def check_tool_availability(tool):
+    """Verifica si una herramienta está disponible en el sistema"""
+    result, _ = run_command(f"which {tool}")
+    if result.strip() == "":
+        print(f"Error: {tool} no está instalado o no está en el PATH.")
+        return False
+    return True
+
 def scan_wifi():
     """Escanear redes Wi-Fi cercanas"""
     print("Escaneando redes Wi-Fi...")
@@ -88,6 +96,12 @@ def perform_pixie_dust_attack(bssid):
         return None
 
 def main():
+    # Verificar la disponibilidad de las herramientas necesarias
+    tools = ["airodump-ng", "aireplay-ng", "reaver", "pixiewps"]
+    for tool in tools:
+        if not check_tool_availability(tool):
+            return
+
     # Escanear redes Wi-Fi
     redes, bssids, canales = scan_wifi()
     if redes:
