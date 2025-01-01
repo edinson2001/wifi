@@ -28,25 +28,6 @@ def check_tool_availability(tool):
         return False
     return True
 
-def toggle_wifi(state):
-    """Enciende o apaga el WiFi"""
-    if state == "off":
-        print("Apagando WiFi...")
-        run_command("svc wifi disable", use_sudo=True)
-    elif state == "on":
-        print("Encendiendo WiFi...")
-        run_command("svc wifi enable", use_sudo=True)
-
-def toggle_hotspot(state):
-    """Enciende o apaga el hotspot"""
-    if state == "on":
-        print("Encendiendo Hotspot...")
-        run_command("svc wifi enable", use_sudo=True)
-        run_command("svc wifi tethering enable", use_sudo=True)
-    elif state == "off":
-        print("Apagando Hotspot...")
-        run_command("svc wifi tethering disable", use_sudo=True)
-
 def scan_wifi(interface):
     """Escanear redes Wi-Fi cercanas utilizando la interfaz especificada"""
     print(f"Escaneando redes Wi-Fi en la interfaz {interface}...")
@@ -99,10 +80,6 @@ def main():
         if not check_tool_availability(tool):
             return
 
-    # Apagar WiFi y encender Hotspot
-    toggle_wifi("off")
-    toggle_hotspot("on")
-
     # Escanear redes Wi-Fi utilizando la interfaz del hotspot (por ejemplo, wlan1)
     hotspot_interface = "wlan1"  # Asegúrate de que esta sea la interfaz correcta para el hotspot en tu dispositivo
     redes, bssids, canales = scan_wifi(hotspot_interface)
@@ -130,7 +107,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 
