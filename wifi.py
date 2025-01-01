@@ -4,13 +4,19 @@ import os
 import tempfile
 from tabulate import tabulate
 
-def run_command(command, use_sudo=False):
+def run_command(command, use_sudo=False, timeout=None):
     """Ejecuta un comando de shell y muestra la salida en tiempo real"""
     if use_sudo:
         command = f"su -c '{command}'"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     
-    stdout, stderr = process.communicate()
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        stdout, stderr = process.communicate()
+        print("El comando ha excedido el tiempo de espera y ha sido terminado.")
+    
     return stdout, stderr
 
 def extract_value(output, key):
@@ -66,7 +72,7 @@ def capture_wps_data(interface, ssid):
     wpa_supplicant_path = "/data/data/com.termux/files/usr/bin/wpa_supplicant"  # Ruta completa de wpa_supplicant
     wpa_supplicant_command = f"{wpa_supplicant_path} -i {interface} -c {conf_file} -dd"
     print(f"Ejecutando wpa_supplicant: {wpa_supplicant_command}")
-    stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True)
+    stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True, timeout=30)  # Agregar un tiempo de espera de 30 segundos
 
     print("Salida de wpa_supplicant:")
     print(stdout)
