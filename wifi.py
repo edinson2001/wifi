@@ -2,7 +2,6 @@ import subprocess
 import re
 import os
 import tempfile
-import time
 from tabulate import tabulate
 
 def run_command(command, use_sudo=False):
@@ -10,9 +9,6 @@ def run_command(command, use_sudo=False):
     if use_sudo:
         command = f"su -c '{command}'"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    
-    for line in process.stdout:
-        print(line.strip())  # Mostrar cada línea en tiempo real
     
     stdout, stderr = process.communicate()
     return stdout, stderr
