@@ -28,6 +28,18 @@ def is_valid_bssid(bssid):
     """Verifica si un BSSID es válido"""
     return re.match(r"([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}", bssid) is not None
 
+def freq_to_channel(freq):
+    """Convierte una frecuencia en MHz al número de canal correspondiente"""
+    freq = int(freq)
+    if 2412 <= freq <= 2472:
+        return (freq - 2407) // 5
+    elif freq == 2484:
+        return 14
+    elif 5180 <= freq <= 5825:
+        return (freq - 5000) // 5
+    else:
+        return freq  # Devuelve la frecuencia si no se puede convertir
+
 def scan_wifi(interface):
     """Escanear redes Wi-Fi cercanas utilizando la interfaz especificada"""
     print(f"Escaneando redes Wi-Fi en la interfaz {interface}...")
@@ -45,7 +57,8 @@ def scan_wifi(interface):
             if is_valid_bssid(bssid):
                 bssids.append(bssid)
         if "freq:" in linea:
-            canal = linea.split(':', 1)[1].strip()
+            freq = linea.split(':', 1)[1].strip()
+            canal = freq_to_channel(freq)
             canales.append(canal)
         if "signal:" in linea:
             intensidad = linea.split(':', 1)[1].strip()
@@ -72,7 +85,7 @@ def capture_wps_data(interface, ssid):
     wpa_supplicant_path = "/data/data/com.termux/files/usr/bin/wpa_supplicant"  # Ruta completa de wpa_supplicant
     wpa_supplicant_command = f"{wpa_supplicant_path} -i {interface} -c {conf_file} -dd"
     print(f"Ejecutando wpa_supplicant: {wpa_supplicant_command}")
-    stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True, timeout=30)  # Agregar un tiempo de espera de 30 segundos
+    stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True, timeout=60)  # Aumentar el tiempo de espera a 60 segundos
 
     print("Salida de wpa_supplicant:")
     print(stdout)
