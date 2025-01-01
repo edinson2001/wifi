@@ -32,6 +32,7 @@ def scan_wifi(interface):
     resultado, _ = run_command(f"iw dev {interface} scan", use_sudo=True)
     redes = []
     bssids = []
+    signals = []
     for linea in resultado.split('\n'):
         if "SSID" in linea:
             essid = linea.split(':', 1)[1].strip()
@@ -40,7 +41,10 @@ def scan_wifi(interface):
             bssid = linea.split()[1].split('(')[0]
             if is_valid_bssid(bssid):
                 bssids.append(bssid)
-    return redes, bssids
+        if "signal:" in linea:
+            signal = linea.split(':', 1)[1].strip()
+            signals.append(signal)
+    return redes, bssids, signals
 
 def create_wpa_supplicant_conf(ssid):
     """Crea un archivo de configuración temporal para wpa_supplicant"""
@@ -133,12 +137,12 @@ def main():
             return
 
     scan_interface = "wlan1"
-    redes, bssids = scan_wifi(scan_interface)
+    redes, bssids, signals = scan_wifi(scan_interface)
 
     if redes:
         print("\nRedes disponibles:")
-        tabla_redes = [[i + 1, redes[i], bssids[i]] for i in range(len(redes))]
-        print(tabulate(tabla_redes, headers=["#", "SSID", "BSSID"], tablefmt="grid"))
+        tabla_redes = [[i + 1, redes[i], bssids[i], signals[i]] for i in range(len(redes))]
+        print(tabulate(tabla_redes, headers=["#", "SSID", "BSSID", "Señal"], tablefmt="grid"))
 
         try:
             seleccion = int(input("\nSelecciona la red que deseas auditar (número): ")) - 1
@@ -156,7 +160,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 
