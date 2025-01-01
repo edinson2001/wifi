@@ -27,6 +27,10 @@ def extract_value(output, key):
     match = re.search(f"{key} ([0-9a-fA-F:]+)", output)
     return match.group(1) if match else None
 
+def is_valid_bssid(bssid):
+    """Verifica si un BSSID es válido"""
+    return re.match(r"([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}", bssid) is not None
+
 def scan_wifi(interface):
     """Escanear redes Wi-Fi cercanas utilizando la interfaz especificada"""
     print(f"Escaneando redes Wi-Fi en la interfaz {interface}...")
@@ -41,7 +45,7 @@ def scan_wifi(interface):
         if "BSS" in linea:
             bssid = linea.split()[1]
             bssid = bssid.split('(')[0]  # Limpiar el BSSID
-            if re.match(r"([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}", bssid):
+            if is_valid_bssid(bssid):
                 bssids.append(bssid)
             else:
                 bssids.append(None)
