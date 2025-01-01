@@ -1,7 +1,6 @@
 import subprocess
 import re
 import os
-import tempfile
 import time
 from tabulate import tabulate
 
@@ -90,10 +89,16 @@ def perform_pixie_dust_attack(interface, bssid):
         print(stdout.decode())
         return None
 
+def set_monitor_mode(interface):
+    """Configura la interfaz en modo monitor"""
+    run_command(f"ip link set {interface} down", use_sudo=True)
+    run_command(f"iw dev {interface} set type monitor", use_sudo=True)
+    run_command(f"ip link set {interface} up", use_sudo=True)
+
 def check_tool_availability(tool):
     """Verifica si una herramienta está disponible en el sistema"""
-    result = subprocess.run(["which", tool], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return result.returncode == 0
+    result, _ = run_command(f"which {tool}")
+    return bool(result.strip())
 
 def main():
     # Verificar la disponibilidad de las herramientas necesarias
@@ -102,8 +107,11 @@ def main():
         if not check_tool_availability(tool):
             return
 
-    # Escanear redes Wi-Fi utilizando la interfaz del hotspot (por ejemplo, wlan1)
+    # Configurar la interfaz en modo monitor
     hotspot_interface = "wlan1"  # Asegúrate de que esta sea la interfaz correcta para el hotspot en tu dispositivo
+    set_monitor_mode(hotspot_interface)
+
+    # Escanear redes Wi-Fi utilizando la interfaz del hotspot
     redes, bssids, canales, intensidades = scan_wifi(hotspot_interface)
     if redes:
         print("Redes disponibles:")
@@ -113,7 +121,7 @@ def main():
                 table.append([i + 1, red, bssids[i], canales[i], intensidades[i]])
         
         headers = ["#", "SSID", "BSSID", "Canal", "Intensidad"]
-        print(tabulate(table, headers, tablefmt="fancy_grid"))
+        print(tabulate(table, headers, tablefmt="grid"))
         
         seleccion = int(input("Selecciona la red que deseas auditar (número): ")) - 1
         red_seleccionada = redes[seleccion]
