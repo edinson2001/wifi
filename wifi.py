@@ -62,7 +62,7 @@ def scan_wifi(interface):
             canales.append(canal)
         if "signal:" in linea:
             intensidad = linea.split(':', 1)[1].strip()
-            intensidades.append(intesidad)
+            intensidades.append(intensidad)
     return redes, bssids, canales, intensidades
 
 def create_wpa_supplicant_conf(ssid):
