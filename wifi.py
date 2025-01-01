@@ -342,7 +342,7 @@ def main():
 
     # Utilizar la interfaz secundaria para el escaneo y el ataque
 
-    scan_interface = "wlan1"  # Asegúrate de que esta sea la interfaz correcta para el escaneo en tu dispositivo
+    scan_interface = "wlan0"  # Asegúrate de que esta sea la interfaz correcta para el escaneo en tu dispositivo
 
 
 
