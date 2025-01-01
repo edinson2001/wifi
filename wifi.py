@@ -78,7 +78,7 @@ def display_menu():
     print("=" * 50)
     print("               WiFi Auditor Tool v1.0")
     print("=" * 50)
-    print("Desarrollador: Tú")
+    print("Desarrollador: Edinson2001")
     print("GitHub: Próximamente")
     print("-" * 50)
 
@@ -95,7 +95,16 @@ def main():
 
     # Mostrar redes en una tabla
     headers = ["#", "SSID", "BSSID", "Canal", "Intensidad"]
-    table = [[i+1, n["SSID"], n["BSSID"], n["Channel"], n["Signal"]] for i, n in enumerate(networks)]
+    table = [
+        [
+            i + 1,
+            n.get("SSID", "<SSID oculto>"),  # Manejo de SSID oculto
+            n["BSSID"],
+            n.get("Channel", "N/A"),
+            n.get("Signal", "N/A"),
+        ]
+        for i, n in enumerate(networks)
+    ]
     print("\n[+] Redes disponibles:")
     print(tabulate(table, headers, tablefmt="fancy_grid"))
 
@@ -110,10 +119,10 @@ def main():
         return
     
     selected_network = networks[choice]
-    print(f"\n[+] Red seleccionada: {selected_network['SSID']} ({selected_network['BSSID']})")
+    print(f"\n[+] Red seleccionada: {selected_network.get('SSID', '<SSID oculto>')} ({selected_network['BSSID']})")
     
     # Intentar asociarse usando wpa_supplicant
-    output = run_wpa_supplicant(interface, selected_network["SSID"])
+    output = run_wpa_supplicant(interface, selected_network.get("SSID", ""))
     print("\n[+] Salida de wpa_supplicant:")
     print(output)
 
