@@ -41,14 +41,17 @@ def scan_wifi(interface):
         if "BSS" in linea:
             bssid = linea.split()[1]
             bssid = bssid.split('(')[0]  # Limpiar el BSSID
-            bssids.append(bssid)
+            if re.match(r"([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}", bssid):
+                bssids.append(bssid)
+            else:
+                bssids.append(None)
         if "freq" in linea:
             try:
                 freq = int(linea.split()[1])
                 channel = int((freq - 2407) / 5)
                 canales.append(channel)
             except ValueError:
-                continue
+                canales.append(None)
     return redes, bssids, canales
 
 def perform_pixie_dust_attack(interface, bssid):
@@ -96,7 +99,8 @@ def main():
     if redes:
         print("Redes disponibles:")
         for i, red in enumerate(redes):
-            print(f"{i + 1}. {red} - BSSID: {bssids[i]}")
+            if bssids[i]:
+                print(f"{i + 1}. {red} - BSSID: {bssids[i]}")
         
         seleccion = int(input("Selecciona la red que deseas auditar (número): ")) - 1
         red_seleccionada = redes[seleccion]
