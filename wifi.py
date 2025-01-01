@@ -70,7 +70,6 @@ def perform_pixie_dust_attack(interface, bssid):
         if output == b'' and process.poll() is not None:
             break
         if output:
-            os.system('clear')
             print(output.strip().decode())
         time.sleep(0.1)
 
@@ -90,14 +89,14 @@ def perform_pixie_dust_attack(interface, bssid):
         return None
 
 def check_tool_availability(tool):
-    """Verifica si una herramienta está disponible en el sistema"""
+    """Verifica la disponibilidad de una herramienta en el sistema"""
     result = subprocess.run(["which", tool], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return result.returncode == 0
 
 def main():
-
-    # Limpiar la pantalla
+    # Limpiar la pantalla al inicio del script
     os.system('clear')
+
     # Verificar la disponibilidad de las herramientas necesarias
     tools = ["iw"]
     for tool in tools:
@@ -123,8 +122,6 @@ def main():
         red_seleccionada = redes[seleccion]
         bssid_seleccionado = bssids[seleccion]
         canal_seleccionado = canales[seleccion]
-        
-        
         
         print(f"Red seleccionada: {red_seleccionada}")
         print(f"BSSID: {bssid_seleccionado}")
