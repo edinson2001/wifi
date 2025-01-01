@@ -57,7 +57,7 @@ network={{
     ssid="{ssid}"
     key_mgmt=NONE
 }}
-
+"""
     conf_path = "/data/data/com.termux/files/home/wpa_supplicant.conf"
     with open(conf_path, "w") as conf_file:
         conf_file.write(conf_content)
