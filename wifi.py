@@ -118,6 +118,11 @@ def display_menu():
     print("GitHub: Próximamente")
     print("-" * 50)
 
+def check_tool_availability(tool):
+    """Verifica la disponibilidad de una herramienta en el sistema."""
+    result = subprocess.run(["which", tool], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return result.returncode == 0
+
 def main():
     # Limpiar la pantalla al inicio del script
     os.system("clear")
