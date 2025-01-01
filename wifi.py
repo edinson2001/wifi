@@ -71,6 +71,13 @@ def create_wpa_supplicant_conf(ssid):
 network={{
     ssid="{ssid}"
     key_mgmt=NONE
+    scan_ssid=1
+    proto=WPA RSN
+    pairwise=CCMP TKIP
+    group=CCMP TKIP
+    eap=PEAP
+    identity="anonymous"
+    password="password"
 }}
 """
     conf_file = tempfile.NamedTemporaryFile(delete=False, mode='w')
@@ -85,7 +92,7 @@ def capture_wps_data(interface, ssid):
     wpa_supplicant_path = "/data/data/com.termux/files/usr/bin/wpa_supplicant"  # Ruta completa de wpa_supplicant
     wpa_supplicant_command = f"{wpa_supplicant_path} -i {interface} -c {conf_file} -dd"
     print(f"Ejecutando wpa_supplicant: {wpa_supplicant_command}")
-    stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True, timeout=60)  # Aumentar el tiempo de espera a 60 segundos
+    stdout, stderr = run_command(wpa_supplicant_command, use_sudo=True, timeout=30)  # Reducir el tiempo de espera a 30 segundos
 
     print("Salida de wpa_supplicant:")
     print(stdout)
