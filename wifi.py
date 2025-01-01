@@ -89,29 +89,24 @@ def perform_pixie_dust_attack(interface, bssid):
         print(stdout.decode())
         return None
 
-def set_monitor_mode(interface):
-    """Configura la interfaz en modo monitor"""
-    run_command(f"ip link set {interface} down", use_sudo=True)
-    run_command(f"iw dev {interface} set type monitor", use_sudo=True)
-    run_command(f"ip link set {interface} up", use_sudo=True)
-
 def check_tool_availability(tool):
     """Verifica si una herramienta está disponible en el sistema"""
-    result, _ = run_command(f"which {tool}")
-    return bool(result.strip())
+    result = subprocess.run(["which", tool], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return result.returncode == 0
 
 def main():
+
+    # Limpiar la pantalla
+    os.system('clear')
     # Verificar la disponibilidad de las herramientas necesarias
     tools = ["iw"]
     for tool in tools:
         if not check_tool_availability(tool):
             return
 
-    # Configurar la interfaz secundaria en modo monitor
+    # Utilizar la interfaz secundaria para el escaneo y el ataque
     scan_interface = "wlan1"  # Asegúrate de que esta sea la interfaz correcta para el escaneo en tu dispositivo
-    set_monitor_mode(scan_interface)
 
-    os.system('clear')
     # Escanear redes Wi-Fi utilizando la interfaz secundaria
     redes, bssids, canales, intensidades = scan_wifi(scan_interface)
     if redes:
@@ -129,7 +124,6 @@ def main():
         bssid_seleccionado = bssids[seleccion]
         canal_seleccionado = canales[seleccion]
         
-       
         
         
         print(f"Red seleccionada: {red_seleccionada}")
